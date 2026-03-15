@@ -357,12 +357,53 @@ input[type=range]::-moz-range-thumb {
 }
 .invest-cta:hover { opacity: 0.8; }
 
-.bp-row td { padding: 4px 4px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+/* ── Shared tooltip popups ── */
+.tt-popup {
+  display: none;
+  position: absolute; left: 50%; bottom: calc(100% + 10px);
+  transform: translateX(-50%);
+  background: #1e1c18; border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px; padding: 12px 14px; min-width: 220px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  z-index: 200; pointer-events: none;
+}
+.tt-popup.visible { display: block !important; }
+.tt-title {
+  font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: rgba(255,255,255,0.35); margin-bottom: 8px;
+}
+.tt-arrow {
+  position: absolute; left: 50%; bottom: -5px;
+  transform: translateX(-50%) rotate(45deg);
+  width: 8px; height: 8px; background: #1e1c18;
+  border-right: 1px solid rgba(255,255,255,0.12);
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+/* Light variant for summary cards */
+.tt-popup.tt-light {
+  background: var(--surface); border-color: var(--border-strong);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+.tt-arrow-light {
+  background: var(--surface) !important;
+  border-color: var(--border-strong) !important;
+}
+.bp-row.lp td { border-bottom-color: var(--border) !important; }
+.bp-label.lp { color: var(--muted) !important; }
+.bp-amt.lp { color: var(--text) !important; }
+
+.hover-hint {
+  font-size: 9px; opacity: 0.45; border: 1px solid var(--border-strong);
+  border-radius: 3px; padding: 0 4px; letter-spacing: 0.04em;
+  font-weight: 400; margin-left: 3px; vertical-align: middle;
+  font-family: var(--sans); text-transform: none;
+}
+
+
 .bp-row:last-child td { border-bottom: none; }
 .bp-label { font-size: 11px; color: rgba(255,255,255,0.55); font-family: var(--sans); }
 .bp-amt { font-size: 11px; font-family: var(--mono); color: rgba(255,255,255,0.85); text-align: right; white-space: nowrap; }
 
-#buy-breakdown-popup.visible { display:block !important; }
 
 .disclaimer {
   font-size: 10px; color: var(--faint); line-height: 1.7;
@@ -376,14 +417,98 @@ input[type=range]::-moz-range-thumb {
 }
 .badge.warn { background: #fff5e0; color: #8a6000; }
 
-@media (max-width: 620px) {
+@media (max-width: 680px) {
+  body { padding: 0.75rem 0.75rem 3rem; }
+
+  /* Layout */
   .grid-main { grid-template-columns: 1fr; }
   .asset-grid { grid-template-columns: 1fr; }
-  .hero { grid-template-columns: 1fr; }
+
+  /* Top bar */
+  .top-bar { flex-direction: column; gap: 2px; }
+  .top-bar h1 { font-size: 12px; }
+  .top-bar span { font-size: 10px; }
+
+  /* Hero strip: stack vertically */
+  .hero {
+    grid-template-columns: 1fr;
+    border-radius: var(--r);
+  }
   .hero-arrow { display: none; }
-  .hero-cell { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .hero-cell {
+    border-right: none;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 14px 16px;
+  }
+  .hero-cell:last-child { border-bottom: none; }
+  .hero-cell .h-val { font-size: 18px; }
+
+  /* Tooltip popups: full-width, appear below on mobile */
+  .tt-popup {
+    position: fixed;
+    left: 12px !important;
+    right: 12px !important;
+    bottom: auto !important;
+    top: auto !important;
+    transform: none !important;
+    width: auto !important;
+    min-width: unset !important;
+    /* anchor to bottom of viewport so it always fits */
+    bottom: 16px !important;
+    z-index: 9999;
+  }
+  .tt-arrow { display: none; }
+
+  /* Inputs */
+  .input-row { grid-template-columns: 1fr 1fr; }
+  .slider-row { grid-template-columns: 1fr; gap: 12px; }
+
+  /* Summary metrics: 2 across, cash left full width */
   .metrics-row { grid-template-columns: 1fr 1fr; }
-  .input-row.three { grid-template-columns: 1fr 1fr; }
+  #card-balance { grid-column: 1 / -1; }
+  .metric .m-val { font-size: 13px; }
+
+  /* Monthly strip */
+  .monthly-strip { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .monthly-strip .ms-val { font-size: 17px; }
+  .monthly-strip .ms-sub { max-width: 100%; }
+
+  /* Carry box */
+  .carry-box { padding: 8px 10px; }
+
+  /* CTA button */
+  .invest-cta { width: 100%; justify-content: center; font-size: 12px; }
+
+  /* Invest section */
+  .invest-top { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .avail-pill { font-size: 11px; }
+
+  /* Asset cards */
+  .asset-head { flex-wrap: wrap; gap: 8px; }
+  .asset-stats { grid-template-columns: 1fr 1fr; }
+
+  /* Combined bar */
+  .comb-bar { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .comb-total { align-items: flex-start; width: 100%; }
+  .comb-sep { display: none; }
+
+  /* Chart */
+  .chart-wrap { height: 200px; }
+  .chart-controls { flex-direction: column; gap: 10px; }
+  .ctrl-g { min-width: 100%; }
+
+  /* Breakdown tables */
+  .bk-table td { padding: 4px 6px; font-size: 11px; }
+
+  /* Section sep */
+  .section-sep { padding: 6px 0 3px; }
+}
+
+@media (max-width: 380px) {
+  .input-row { grid-template-columns: 1fr; }
+  .metrics-row { grid-template-columns: 1fr; }
+  #card-balance { grid-column: auto; }
+  .asset-stats { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -404,19 +529,12 @@ input[type=range]::-moz-range-thumb {
       <div class="h-sub">Your current property</div>
     </div>
     <div class="hero-arrow">→</div>
-    <div class="hero-cell buy" id="hero-buy-cell" style="position:relative;cursor:pointer;" onclick="toggleBuyBreakdown(event)" onmouseenter="showBuyBreakdown()" onmouseleave="hideBuyBreakdown()">
+    <div class="hero-cell buy" id="hero-buy-cell" style="position:relative;cursor:pointer;" onclick="togglePopup('buy-breakdown-popup',event)" onmouseenter="showPopup('buy-breakdown-popup')" onmouseleave="hidePopup('buy-breakdown-popup')">
       <div class="h-label"><span class="dot"></span>Total Belgium cost</div>
       <div class="h-val" id="h-buy">—</div>
       <div class="h-sub" style="display:flex;align-items:center;gap:5px;">Listed + taxes + fees <span style="font-size:9px;opacity:0.5;border:1px solid rgba(255,255,255,0.25);border-radius:3px;padding:0 4px;letter-spacing:0.05em;">hover</span></div>
       <!-- breakdown popup -->
-      <div id="buy-breakdown-popup" style="
-        display:none; position:absolute; left:50%; bottom:calc(100% + 8px);
-        transform:translateX(-50%);
-        background:#1e1c18; border:1px solid rgba(255,255,255,0.12);
-        border-radius:8px; padding:12px 14px; min-width:220px;
-        box-shadow:0 8px 24px rgba(0,0,0,0.35);
-        z-index:100; pointer-events:none;
-      ">
+      <div id="buy-breakdown-popup" class="tt-popup" style="pointer-events:none;">
         <div style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:8px;">Cost breakdown</div>
         <table style="width:100%;border-collapse:collapse;">
           <tr class="bp-row"><td class="bp-label">Listed price</td><td class="bp-amt" id="bp-listed">—</td></tr>
@@ -429,15 +547,27 @@ input[type=range]::-moz-range-thumb {
             <td style="padding:6px 4px 2px;font-size:13px;font-weight:600;color:#fbbf5e;font-family:var(--mono);text-align:right;" id="bp-total">—</td>
           </tr>
         </table>
-        <!-- arrow -->
-        <div style="position:absolute;left:50%;bottom:-5px;transform:translateX(-50%) rotate(45deg);width:8px;height:8px;background:#1e1c18;border-right:1px solid rgba(255,255,255,0.12);border-bottom:1px solid rgba(255,255,255,0.12);"></div>
+        <div class="tt-arrow"></div>
       </div>
     </div>
     <div class="hero-arrow">→</div>
-    <div class="hero-cell invest">
+    <div class="hero-cell invest" id="hero-invest-cell" style="position:relative;cursor:pointer;" onclick="togglePopup('invest-popup',event)" onmouseenter="showPopup('invest-popup')" onmouseleave="hidePopup('invest-popup')">
       <div class="h-label"><span class="dot"></span>Remaining for investment</div>
       <div class="h-val" id="h-invest">—</div>
-      <div class="h-sub">After all costs</div>
+      <div class="h-sub" style="display:flex;align-items:center;gap:5px;">After all costs <span style="font-size:9px;opacity:0.5;border:1px solid rgba(255,255,255,0.25);border-radius:3px;padding:0 4px;letter-spacing:0.05em;">hover</span></div>
+      <div id="invest-popup" class="tt-popup">
+        <div class="tt-title">How it's calculated</div>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr class="bp-row"><td class="bp-label">Selling price</td><td class="bp-amt" id="ip-sell">—</td></tr>
+          <tr class="bp-row"><td class="bp-label">− Belgium total cost</td><td class="bp-amt" id="ip-belgcost">—</td></tr>
+          <tr class="bp-row" id="ip-carry-row"><td class="bp-label">+ Carried mortgage</td><td class="bp-amt" id="ip-carry">—</td></tr>
+          <tr style="border-top:1px solid rgba(255,255,255,0.1);">
+            <td style="padding:6px 4px 2px;font-size:11px;font-weight:600;color:#6ee7a8;font-family:var(--mono);">= Remaining</td>
+            <td style="padding:6px 4px 2px;font-size:13px;font-weight:600;color:#6ee7a8;font-family:var(--mono);text-align:right;" id="ip-remain">—</td>
+          </tr>
+        </table>
+        <div class="tt-arrow"></div>
+      </div>
     </div>
   </div>
 
@@ -521,21 +651,68 @@ input[type=range]::-moz-range-thumb {
       <div class="card">
         <p class="card-title">Summary</p>
         <div class="metrics-row">
-          <div class="metric" id="card-equity">
-            <p class="m-label">Net from sale</p>
+
+          <!-- Net from sale -->
+          <div class="metric" id="card-equity" style="position:relative;cursor:pointer;" onclick="togglePopup('eq-popup',event)" onmouseenter="showPopup('eq-popup')" onmouseleave="hidePopup('eq-popup')">
+            <p class="m-label">Net from sale <span class="hover-hint">hover</span></p>
             <p class="m-val" id="equity">—</p>
             <p class="m-sub">After mortgage</p>
+            <div id="eq-popup" class="tt-popup tt-light">
+              <div class="tt-title" style="color:var(--faint);">How it's calculated</div>
+              <table style="width:100%;border-collapse:collapse;">
+                <tr class="bp-row lp"><td class="bp-label lp">Selling price</td><td class="bp-amt lp" id="eq-sell">—</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">− Outstanding mortgage</td><td class="bp-amt lp" id="eq-mort">—</td></tr>
+                <tr style="border-top:1px solid var(--border);">
+                  <td style="padding:6px 4px 2px;font-size:11px;font-weight:600;font-family:var(--mono);color:var(--pos);">= Net equity</td>
+                  <td style="padding:6px 4px 2px;font-size:13px;font-weight:600;font-family:var(--mono);text-align:right;color:var(--pos);" id="eq-net">—</td>
+                </tr>
+              </table>
+              <div class="tt-arrow tt-arrow-light"></div>
+            </div>
           </div>
-          <div class="metric" id="card-belgTotal">
-            <p class="m-label">Belgium total</p>
+
+          <!-- Belgium total -->
+          <div class="metric" id="card-belgTotal" style="position:relative;cursor:pointer;" onclick="togglePopup('bt-popup',event)" onmouseenter="showPopup('bt-popup')" onmouseleave="hidePopup('bt-popup')">
+            <p class="m-label">Belgium total <span class="hover-hint">hover</span></p>
             <p class="m-val" id="belgiumTotal">—</p>
             <p class="m-sub">Full acquisition</p>
+            <div id="bt-popup" class="tt-popup tt-light">
+              <div class="tt-title" style="color:var(--faint);">Cost breakdown</div>
+              <table style="width:100%;border-collapse:collapse;">
+                <tr class="bp-row lp"><td class="bp-label lp">Listed price</td><td class="bp-amt lp" id="bt-listed">—</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">Registration tax <span id="bt-tag" style="font-size:9px;background:var(--accent-bg);color:var(--accent);border-radius:3px;padding:1px 4px;">—</span></td><td class="bp-amt lp" id="bt-reg">—</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">Notary fees (~1%)</td><td class="bp-amt lp" id="bt-notary">—</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">Admin &amp; misc.</td><td class="bp-amt lp">€1,500</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">Renovation</td><td class="bp-amt lp">€20,000</td></tr>
+                <tr style="border-top:1px solid var(--border);">
+                  <td style="padding:6px 4px 2px;font-size:11px;font-weight:600;font-family:var(--mono);color:var(--text);">= Total</td>
+                  <td style="padding:6px 4px 2px;font-size:13px;font-weight:600;font-family:var(--mono);text-align:right;color:var(--text);" id="bt-total">—</td>
+                </tr>
+              </table>
+              <div class="tt-arrow tt-arrow-light"></div>
+            </div>
           </div>
-          <div class="metric" id="card-balance">
-            <p class="m-label">Cash left</p>
+
+          <!-- Cash left -->
+          <div class="metric" id="card-balance" style="position:relative;cursor:pointer;" onclick="togglePopup('cl-popup',event)" onmouseenter="showPopup('cl-popup')" onmouseleave="hidePopup('cl-popup')">
+            <p class="m-label">Cash left <span class="hover-hint">hover</span></p>
             <p class="m-val" id="balance">—</p>
             <p class="m-sub">After buying</p>
+            <div id="cl-popup" class="tt-popup tt-light">
+              <div class="tt-title" style="color:var(--faint);">How it's calculated</div>
+              <table style="width:100%;border-collapse:collapse;">
+                <tr class="bp-row lp"><td class="bp-label lp">Selling price</td><td class="bp-amt lp" id="cl-sell">—</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">− Belgium total cost</td><td class="bp-amt lp" id="cl-belgcost">—</td></tr>
+                <tr class="bp-row lp" id="cl-carry-row"><td class="bp-label lp">+ Carried mortgage</td><td class="bp-amt lp" id="cl-carry">—</td></tr>
+                <tr style="border-top:1px solid var(--border);">
+                  <td style="padding:6px 4px 2px;font-size:11px;font-weight:600;font-family:var(--mono);color:var(--pos);">= Cash left</td>
+                  <td style="padding:6px 4px 2px;font-size:13px;font-weight:600;font-family:var(--mono);text-align:right;color:var(--pos);" id="cl-result">—</td>
+                </tr>
+              </table>
+              <div class="tt-arrow tt-arrow-light"></div>
+            </div>
           </div>
+
         </div>
 
         <div class="monthly-strip" id="monthly-box">
@@ -723,23 +900,33 @@ input[type=range]::-moz-range-thumb {
 </div>
 
 <script>
-  let buyPopupPinned = false;
+  const pinnedPopups = new Set();
 
-  function showBuyBreakdown() {
-    if (!buyPopupPinned) document.getElementById('buy-breakdown-popup').classList.add('visible');
+  function showPopup(id) {
+    if (!pinnedPopups.has(id)) document.getElementById(id).classList.add('visible');
   }
-  function hideBuyBreakdown() {
-    if (!buyPopupPinned) document.getElementById('buy-breakdown-popup').classList.remove('visible');
+  function hidePopup(id) {
+    if (!pinnedPopups.has(id)) document.getElementById(id).classList.remove('visible');
   }
-  function toggleBuyBreakdown(e) {
+  function togglePopup(id, e) {
     e.stopPropagation();
-    buyPopupPinned = !buyPopupPinned;
-    document.getElementById('buy-breakdown-popup').classList.toggle('visible', buyPopupPinned);
+    if (pinnedPopups.has(id)) {
+      pinnedPopups.delete(id);
+      document.getElementById(id).classList.remove('visible');
+    } else {
+      pinnedPopups.add(id);
+      document.getElementById(id).classList.add('visible');
+    }
   }
   document.addEventListener('click', () => {
-    buyPopupPinned = false;
-    document.getElementById('buy-breakdown-popup').classList.remove('visible');
+    pinnedPopups.clear();
+    document.querySelectorAll('.tt-popup').forEach(p => p.classList.remove('visible'));
   });
+
+  // keep old aliases working
+  function showBuyBreakdown() { showPopup('buy-breakdown-popup'); }
+  function hideBuyBreakdown() { hidePopup('buy-breakdown-popup'); }
+  function toggleBuyBreakdown(e) { togglePopup('buy-breakdown-popup', e); }
 
   const fmt = n => '€' + Math.round(n).toLocaleString('de-DE');
   const fmtN = n => parseFloat(n.toFixed(4)).toLocaleString('de-DE', {maximumFractionDigits: 4});
@@ -772,12 +959,46 @@ input[type=range]::-moz-range-thumb {
 
     cashBalance = Math.max(0, cashLeft);
 
-    // Sync hero popup
+    // Sync hero buy popup
     document.getElementById('bp-listed').textContent  = fmt(listed);
     document.getElementById('bp-reg').textContent     = fmt(regAmount);
     document.getElementById('bp-notary').textContent  = fmt(notary);
     document.getElementById('bp-tag').textContent     = regLabel[region];
     document.getElementById('bp-total').textContent   = fmt(belgTotal);
+
+    // Sync invest popup
+    document.getElementById('ip-sell').textContent     = fmt(sell);
+    document.getElementById('ip-belgcost').textContent = fmt(belgTotal);
+    document.getElementById('ip-remain').textContent   = fmt(cashBalance);
+    const ipCarryRow = document.getElementById('ip-carry-row');
+    if (carryOver) {
+      ipCarryRow.style.display = 'table-row';
+      document.getElementById('ip-carry').textContent = fmt(mortgage);
+    } else {
+      ipCarryRow.style.display = 'none';
+    }
+
+    // Sync summary card tooltips
+    document.getElementById('eq-sell').textContent = fmt(sell);
+    document.getElementById('eq-mort').textContent = fmt(mortgage);
+    document.getElementById('eq-net').textContent  = fmt(equity);
+
+    document.getElementById('bt-listed').textContent  = fmt(listed);
+    document.getElementById('bt-reg').textContent     = fmt(regAmount);
+    document.getElementById('bt-notary').textContent  = fmt(notary);
+    document.getElementById('bt-tag').textContent     = regLabel[region];
+    document.getElementById('bt-total').textContent   = fmt(belgTotal);
+
+    document.getElementById('cl-sell').textContent     = fmt(sell);
+    document.getElementById('cl-belgcost').textContent = fmt(belgTotal);
+    document.getElementById('cl-result').textContent   = fmt(cashLeft);
+    const clCarryRow = document.getElementById('cl-carry-row');
+    if (carryOver) {
+      clCarryRow.style.display = 'table-row';
+      document.getElementById('cl-carry').textContent = fmt(mortgage);
+    } else {
+      clCarryRow.style.display = 'none';
+    }
 
     // Hero strip
     document.getElementById('h-sell').textContent   = fmt(sell);
