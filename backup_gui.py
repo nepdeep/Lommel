@@ -1,14 +1,13 @@
-import os
 import glob
-import shutil
+import os
 import re
-import sys
+import shutil
 import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
-
+from tkinter import filedialog, messagebox, ttk
 
 BACKUP_DIR = "backup"
 BASE_EXCLUDED_NAMES = {
@@ -44,15 +43,8 @@ class BackupManager:
         for char in invalid_chars:
             cleaned = cleaned.replace(char, "_")
         cleaned = " ".join(cleaned.split())
-        return cleaned[:60].strip(" ._") or "backup"
-
-    def get_next_backup_number(self, base_filename):
-        revision = 1
-        while True:
-            pattern = str(self.backup_dir / f"{base_filename}R{revision:02d}.*")
-            if not glob.glob(pattern):
-                return revision
-            revision += 1
+        cleaned = cleaned.strip(" ._")
+        return cleaned[:60] or "backup"
 
     def detect_available_files(self):
         html_files = sorted(
@@ -60,12 +52,12 @@ class BackupManager:
             key=str.lower,
         )
 
-        excluded_py_names = self.get_excluded_names()
+        excluded = self.get_excluded_names()
         py_files = sorted(
             [
                 p.name
                 for p in self.root_dir.glob("*.py")
-                if p.is_file() and p.name.lower() not in excluded_py_names
+                if p.is_file() and p.name.lower() not in excluded
             ],
             key=str.lower,
         )
@@ -77,9 +69,19 @@ class BackupManager:
             return html_files
         if selected_type == "py":
             return py_files
-        if selected_type == "both":
-            return sorted(set(html_files + py_files), key=str.lower)
-        return []
+        return sorted(html_files + py_files, key=str.lower)
+
+    def get_counts(self):
+        html_files, py_files = self.detect_available_files()
+        return len(html_files), len(py_files)
+
+    def get_next_backup_number(self, base_filename):
+        revision = 1
+        while True:
+            pattern = str(self.backup_dir / f"{base_filename}R{revision:02d}.*")
+            if not glob.glob(pattern):
+                return revision
+            revision += 1
 
     def detect_original_extension(self, base_name, current_html_bases=None, current_py_bases=None):
         if current_html_bases is None or current_py_bases is None:
@@ -121,13 +123,7 @@ class BackupManager:
             if selected_type == "py" and ext not in (".py", "unknown"):
                 continue
 
-            group = data.setdefault(
-                base_name,
-                {
-                    "extension": ext,
-                    "revisions": [],
-                },
-            )
+            group = data.setdefault(base_name, {"extension": ext, "revisions": []})
             group["revisions"].append(
                 {
                     "revision": revision,
@@ -172,8 +168,7 @@ class BackupManager:
             raise ValueError("Invalid backup filename format.")
 
         base_name = match.group(1)
-        detected_ext = self.detect_original_extension(base_name)
-        ext = target_ext or detected_ext
+        ext = target_ext or self.detect_original_extension(base_name)
         if not ext:
             raise ValueError("Target extension is required for unknown file type.")
 
@@ -204,21 +199,19 @@ class BackupGUI(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Backup Manager")
-        self.geometry("1220x760")
-        self.minsize(1040, 640)
-        self.configure(bg="#eef1f5")
+        self.geometry("980x680")
+        self.minsize(860, 600)
+        self.configure(bg="#f4f6f8")
 
         self.manager = BackupManager()
         self.selected_type = tk.StringVar(value="both")
-        self.search_var = tk.StringVar()
         self.description_var = tk.StringVar(value=self.default_description())
-        self.auto_refresh_var = tk.BooleanVar(value=True)
-        self.status_var = tk.StringVar(value="Ready")
         self.root_dir_var = tk.StringVar(value=str(self.manager.root_dir))
-        self.ext_choice_var = tk.StringVar(value=".py")
-        self.source_map = {}
-        self.backup_map = {}
-        self.current_backup_rows = []
+        self.status_var = tk.StringVar(value="Ready")
+        self.restore_ext_var = tk.StringVar(value=".py")
+
+        self.backup_file_map = {}
+        self.restore_file_map = {}
 
         self._setup_style()
         self._build_ui()
@@ -231,52 +224,55 @@ class BackupGUI(tk.Tk):
         except Exception:
             pass
 
-        bg = "#eef1f5"
+        bg = "#f4f6f8"
         card = "#ffffff"
-        soft = "#f7f9fc"
-        accent = "#1f4d7a"
-        accent2 = "#3d7ab8"
-        text = "#1f2937"
+        soft = "#eef2f6"
+        border = "#d7dde5"
+        text = "#1e293b"
         muted = "#64748b"
-        border = "#d9e2ec"
+        accent = "#1f5f8b"
+        accent_hover = "#2d78aa"
 
         self.colors = {
             "bg": bg,
             "card": card,
             "soft": soft,
-            "accent": accent,
-            "accent2": accent2,
+            "border": border,
             "text": text,
             "muted": muted,
-            "border": border,
+            "accent": accent,
         }
 
         style.configure("App.TFrame", background=bg)
-        style.configure("Card.TFrame", background=card, relief="flat")
+        style.configure("Card.TFrame", background=card)
         style.configure("Soft.TFrame", background=soft)
         style.configure("TLabel", background=bg, foreground=text, font=("Segoe UI", 10))
         style.configure("Muted.TLabel", background=bg, foreground=muted, font=("Segoe UI", 9))
-        style.configure("CardTitle.TLabel", background=card, foreground=text, font=("Segoe UI Semibold", 14))
+        style.configure("Header.TLabel", background=bg, foreground=text, font=("Segoe UI Semibold", 20))
+        style.configure("Title.TLabel", background=card, foreground=text, font=("Segoe UI Semibold", 13))
         style.configure("CardSub.TLabel", background=card, foreground=muted, font=("Segoe UI", 9))
-        style.configure("Section.TLabelframe", background=card, bordercolor=border, relief="solid")
-        style.configure("Section.TLabelframe.Label", background=card, foreground=text, font=("Segoe UI Semibold", 10))
+        style.configure("Chip.TLabel", background=soft, foreground=text, font=("Segoe UI Semibold", 9), padding=(10, 5))
+
         style.configure("TButton", font=("Segoe UI", 10), padding=(12, 8), background=card)
         style.map("TButton", background=[("active", soft)])
-        style.configure("Accent.TButton", font=("Segoe UI Semibold", 10), padding=(12, 8), foreground="white", background=accent, borderwidth=0)
-        style.map("Accent.TButton", background=[("active", accent2)])
-        style.configure("Secondary.TButton", font=("Segoe UI", 10), padding=(12, 8), background=soft)
-        style.map("Secondary.TButton", background=[("active", "#edf2f7")])
-        style.configure("TRadiobutton", background=bg, foreground=text, font=("Segoe UI", 10))
-        style.configure("TCheckbutton", background=bg, foreground=text, font=("Segoe UI", 10))
-        style.configure("TEntry", padding=8)
+        style.configure("Accent.TButton", font=("Segoe UI Semibold", 10), foreground="white", background=accent, borderwidth=0, padding=(12, 9))
+        style.map("Accent.TButton", background=[("active", accent_hover)])
+        style.configure("Secondary.TButton", font=("Segoe UI", 10), background=soft, padding=(12, 8))
+        style.map("Secondary.TButton", background=[("active", "#e3e9ef")])
+
+        style.configure("TLabelframe", background=card, bordercolor=border, relief="solid")
+        style.configure("TLabelframe.Label", background=card, foreground=text, font=("Segoe UI Semibold", 10))
+        style.configure("TRadiobutton", background=card, foreground=text, font=("Segoe UI", 10))
+        style.configure("TEntry", padding=7)
         style.configure("TCombobox", padding=6)
+
         style.configure(
             "Treeview",
             background=card,
             fieldbackground=card,
             foreground=text,
-            bordercolor=border,
             rowheight=30,
+            bordercolor=border,
             font=("Segoe UI", 10),
         )
         style.configure(
@@ -287,189 +283,157 @@ class BackupGUI(tk.Tk):
             font=("Segoe UI Semibold", 10),
             padding=(8, 8),
         )
-        style.map("Treeview", background=[("selected", "#dbeafe")], foreground=[("selected", text)])
-        style.map("Treeview.Heading", background=[("active", "#e8eef5")])
-        style.configure("Status.TLabel", background=bg, foreground=muted, font=("Segoe UI", 9))
+        style.map("Treeview", background=[("selected", "#dceefe")], foreground=[("selected", text)])
+
+        style.configure("TNotebook", background=bg, borderwidth=0)
+        style.configure("TNotebook.Tab", font=("Segoe UI Semibold", 10), padding=(18, 10))
+        style.map("TNotebook.Tab", background=[("selected", card), ("active", soft)])
 
     def _build_ui(self):
         self.columnconfigure(0, weight=1)
-        self.rowconfigure(1, weight=1)
+        self.rowconfigure(2, weight=1)
 
-        header = ttk.Frame(self, style="App.TFrame", padding=(20, 18, 20, 8))
-        header.grid(row=0, column=0, sticky="nsew")
+        header = ttk.Frame(self, style="App.TFrame", padding=(18, 16, 18, 8))
+        header.grid(row=0, column=0, sticky="ew")
         header.columnconfigure(0, weight=1)
 
-        title_frame = ttk.Frame(header, style="App.TFrame")
-        title_frame.grid(row=0, column=0, sticky="w")
-        ttk.Label(title_frame, text="Backup Manager", font=("Segoe UI Semibold", 22), background=self.colors["bg"], foreground=self.colors["text"]).grid(row=0, column=0, sticky="w")
-        ttk.Label(title_frame, text="Elegant local backup and restore for HTML and Python files", style="Muted.TLabel").grid(row=1, column=0, sticky="w", pady=(2, 0))
+        ttk.Label(header, text="Backup Manager", style="Header.TLabel").grid(row=0, column=0, sticky="w")
+        ttk.Label(header, text="Clear backup and restore for HTML and Python files", style="Muted.TLabel").grid(row=1, column=0, sticky="w", pady=(2, 0))
+        ttk.Button(header, text="Refresh", style="Secondary.TButton", command=self.refresh_all).grid(row=0, column=1, rowspan=2, sticky="e")
 
-        actions = ttk.Frame(header, style="App.TFrame")
-        actions.grid(row=0, column=1, sticky="e")
-        ttk.Button(actions, text="Refresh", style="Secondary.TButton", command=self.refresh_all).grid(row=0, column=0, padx=(0, 8))
-        ttk.Button(actions, text="Open Backup Folder", style="Secondary.TButton", command=self.open_backup_folder).grid(row=0, column=1, padx=(0, 8))
-        ttk.Button(actions, text="Open Working Folder", style="Accent.TButton", command=self.open_working_folder).grid(row=0, column=2)
+        top = ttk.Frame(self, style="Card.TFrame", padding=16)
+        top.grid(row=1, column=0, sticky="ew", padx=18, pady=(0, 12))
+        top.columnconfigure(1, weight=1)
+        top.columnconfigure(3, weight=1)
 
-        body = ttk.Frame(self, style="App.TFrame", padding=(20, 8, 20, 12))
-        body.grid(row=1, column=0, sticky="nsew")
-        body.columnconfigure(0, weight=0)
-        body.columnconfigure(1, weight=1)
-        body.rowconfigure(0, weight=1)
+        ttk.Label(top, text="Folder", style="Title.TLabel").grid(row=0, column=0, sticky="w")
+        ttk.Entry(top, textvariable=self.root_dir_var).grid(row=0, column=1, sticky="ew", padx=(10, 10))
+        ttk.Button(top, text="Browse", style="Secondary.TButton", command=self.choose_folder).grid(row=0, column=2, sticky="ew")
+        ttk.Button(top, text="Open Folder", style="Secondary.TButton", command=self.open_working_folder).grid(row=0, column=3, sticky="ew", padx=(10, 0))
 
-        self._build_left_panel(body)
-        self._build_right_panel(body)
+        type_row = ttk.Frame(top, style="Card.TFrame")
+        type_row.grid(row=1, column=0, columnspan=4, sticky="ew", pady=(14, 0))
+        type_row.columnconfigure(6, weight=1)
 
-        status_bar = ttk.Frame(self, style="App.TFrame", padding=(20, 0, 20, 14))
-        status_bar.grid(row=2, column=0, sticky="ew")
-        status_bar.columnconfigure(0, weight=1)
-        ttk.Label(status_bar, textvariable=self.status_var, style="Status.TLabel").grid(row=0, column=0, sticky="w")
-        ttk.Label(status_bar, textvariable=self.root_dir_var, style="Status.TLabel").grid(row=0, column=1, sticky="e")
+        ttk.Label(type_row, text="Show", style="Title.TLabel").grid(row=0, column=0, sticky="w")
+        ttk.Radiobutton(type_row, text="All files", value="both", variable=self.selected_type, command=self.refresh_all).grid(row=0, column=1, padx=(12, 4), sticky="w")
+        ttk.Radiobutton(type_row, text="HTML only", value="html", variable=self.selected_type, command=self.refresh_all).grid(row=0, column=2, padx=4, sticky="w")
+        ttk.Radiobutton(type_row, text="Python only", value="py", variable=self.selected_type, command=self.refresh_all).grid(row=0, column=3, padx=4, sticky="w")
 
-    def _build_left_panel(self, parent):
-        left = ttk.Frame(parent, style="Card.TFrame", padding=16)
-        left.grid(row=0, column=0, sticky="nsw", padx=(0, 16))
-        left.configure(width=330)
-        left.grid_propagate(False)
+        self.html_count_label = ttk.Label(type_row, text="HTML: 0", style="Chip.TLabel")
+        self.html_count_label.grid(row=0, column=4, padx=(18, 6), sticky="w")
+        self.py_count_label = ttk.Label(type_row, text="Python: 0", style="Chip.TLabel")
+        self.py_count_label.grid(row=0, column=5, padx=6, sticky="w")
+        self.backup_count_label = ttk.Label(type_row, text="Backups: 0", style="Chip.TLabel")
+        self.backup_count_label.grid(row=0, column=6, padx=6, sticky="w")
 
-        ttk.Label(left, text="Workspace", style="CardTitle.TLabel").grid(row=0, column=0, sticky="w")
-        ttk.Label(left, text="Choose folder, file type, and backup options", style="CardSub.TLabel").grid(row=1, column=0, sticky="w", pady=(2, 12))
+        content = ttk.Frame(self, style="App.TFrame")
+        content.grid(row=2, column=0, sticky="nsew", padx=18, pady=(0, 10))
+        content.columnconfigure(0, weight=1)
+        content.rowconfigure(0, weight=1)
 
-        folder_frame = ttk.LabelFrame(left, text="Folder", style="Section.TLabelframe", padding=12)
-        folder_frame.grid(row=2, column=0, sticky="ew", pady=(0, 12))
-        folder_frame.columnconfigure(0, weight=1)
-        self.folder_entry = ttk.Entry(folder_frame, textvariable=self.root_dir_var)
-        self.folder_entry.grid(row=0, column=0, sticky="ew")
-        ttk.Button(folder_frame, text="Browse", style="Secondary.TButton", command=self.choose_folder).grid(row=1, column=0, sticky="ew", pady=(10, 0))
+        self.notebook = ttk.Notebook(content)
+        self.notebook.grid(row=0, column=0, sticky="nsew")
 
-        type_frame = ttk.LabelFrame(left, text="File Type", style="Section.TLabelframe", padding=12)
-        type_frame.grid(row=3, column=0, sticky="ew", pady=(0, 12))
-        ttk.Radiobutton(type_frame, text="HTML", value="html", variable=self.selected_type, command=self.refresh_all).grid(row=0, column=0, sticky="w")
-        ttk.Radiobutton(type_frame, text="Python", value="py", variable=self.selected_type, command=self.refresh_all).grid(row=1, column=0, sticky="w", pady=(6, 0))
-        ttk.Radiobutton(type_frame, text="Both", value="both", variable=self.selected_type, command=self.refresh_all).grid(row=2, column=0, sticky="w", pady=(6, 0))
+        self.backup_tab = ttk.Frame(self.notebook, style="Card.TFrame", padding=16)
+        self.restore_tab = ttk.Frame(self.notebook, style="Card.TFrame", padding=16)
+        self.notebook.add(self.backup_tab, text="Backup")
+        self.notebook.add(self.restore_tab, text="Restore")
 
-        desc_frame = ttk.LabelFrame(left, text="Backup Description", style="Section.TLabelframe", padding=12)
-        desc_frame.grid(row=4, column=0, sticky="ew", pady=(0, 12))
-        desc_frame.columnconfigure(0, weight=1)
-        ttk.Entry(desc_frame, textvariable=self.description_var).grid(row=0, column=0, sticky="ew")
-        helper = ttk.Frame(desc_frame, style="Card.TFrame")
-        helper.grid(row=1, column=0, sticky="ew", pady=(10, 0))
-        helper.columnconfigure((0, 1), weight=1)
-        ttk.Button(helper, text="Use Timestamp", style="Secondary.TButton", command=self.set_timestamp_description).grid(row=0, column=0, sticky="ew", padx=(0, 6))
-        ttk.Button(helper, text="Clear", style="Secondary.TButton", command=lambda: self.description_var.set("")).grid(row=0, column=1, sticky="ew", padx=(6, 0))
+        self._build_backup_tab()
+        self._build_restore_tab()
 
-        actions_frame = ttk.LabelFrame(left, text="Actions", style="Section.TLabelframe", padding=12)
-        actions_frame.grid(row=5, column=0, sticky="ew", pady=(0, 12))
-        actions_frame.columnconfigure(0, weight=1)
-        ttk.Button(actions_frame, text="Backup Selected File", style="Accent.TButton", command=self.backup_selected_file).grid(row=0, column=0, sticky="ew")
-        ttk.Button(actions_frame, text="Backup All Visible Files", style="Secondary.TButton", command=self.backup_all_visible).grid(row=1, column=0, sticky="ew", pady=(10, 0))
-        ttk.Button(actions_frame, text="Restore Selected Revision", style="Secondary.TButton", command=self.restore_selected_backup).grid(row=2, column=0, sticky="ew", pady=(10, 0))
+        status = ttk.Frame(self, style="App.TFrame", padding=(18, 0, 18, 14))
+        status.grid(row=3, column=0, sticky="ew")
+        status.columnconfigure(0, weight=1)
+        ttk.Label(status, textvariable=self.status_var, style="Muted.TLabel").grid(row=0, column=0, sticky="w")
 
-        extras_frame = ttk.LabelFrame(left, text="Extras", style="Section.TLabelframe", padding=12)
-        extras_frame.grid(row=6, column=0, sticky="ew")
-        extras_frame.columnconfigure(0, weight=1)
-        ttk.Checkbutton(extras_frame, text="Auto refresh after actions", variable=self.auto_refresh_var).grid(row=0, column=0, sticky="w")
-        ttk.Button(extras_frame, text="Copy Selected Backup Name", style="Secondary.TButton", command=self.copy_selected_backup_name).grid(row=1, column=0, sticky="ew", pady=(10, 0))
-        ttk.Button(extras_frame, text="Open Selected Backup File", style="Secondary.TButton", command=self.open_selected_backup_file).grid(row=2, column=0, sticky="ew", pady=(10, 0))
+    def _build_backup_tab(self):
+        self.backup_tab.columnconfigure(0, weight=1)
+        self.backup_tab.rowconfigure(2, weight=1)
 
-    def _build_right_panel(self, parent):
-        right = ttk.Frame(parent, style="App.TFrame")
-        right.grid(row=0, column=1, sticky="nsew")
-        right.columnconfigure(0, weight=1)
-        right.rowconfigure(1, weight=1)
-        right.rowconfigure(3, weight=1)
+        ttk.Label(self.backup_tab, text="Backup files in this folder", style="Title.TLabel").grid(row=0, column=0, sticky="w")
+        ttk.Label(self.backup_tab, text="Pick a file and save a new revision", style="CardSub.TLabel").grid(row=1, column=0, sticky="w", pady=(2, 12))
 
-        top_card = ttk.Frame(right, style="Card.TFrame", padding=16)
-        top_card.grid(row=0, column=0, sticky="ew", pady=(0, 16))
-        top_card.columnconfigure(0, weight=1)
+        desc = ttk.Frame(self.backup_tab, style="Card.TFrame")
+        desc.grid(row=2, column=0, sticky="ew", pady=(0, 12))
+        desc.columnconfigure(1, weight=1)
+        ttk.Label(desc, text="Backup label", background=self.colors["card"], foreground=self.colors["text"], font=("Segoe UI Semibold", 10)).grid(row=0, column=0, sticky="w")
+        ttk.Entry(desc, textvariable=self.description_var).grid(row=0, column=1, sticky="ew", padx=(10, 10))
+        ttk.Button(desc, text="Use Time", style="Secondary.TButton", command=self.set_timestamp_description).grid(row=0, column=2, padx=(0, 8))
+        ttk.Button(desc, text="Clear", style="Secondary.TButton", command=lambda: self.description_var.set("")).grid(row=0, column=3)
 
-        top_header = ttk.Frame(top_card, style="Card.TFrame")
-        top_header.grid(row=0, column=0, sticky="ew")
-        top_header.columnconfigure(0, weight=1)
-        ttk.Label(top_header, text="Source Files", style="CardTitle.TLabel").grid(row=0, column=0, sticky="w")
-        ttk.Label(top_header, text="Select a working file to back up", style="CardSub.TLabel").grid(row=1, column=0, sticky="w", pady=(2, 0))
-
-        search_row = ttk.Frame(top_card, style="Card.TFrame")
-        search_row.grid(row=1, column=0, sticky="ew", pady=(12, 10))
-        search_row.columnconfigure(1, weight=1)
-        ttk.Label(search_row, text="Filter:", background=self.colors["card"], foreground=self.colors["muted"], font=("Segoe UI", 10)).grid(row=0, column=0, sticky="w", padx=(0, 8))
-        search_entry = ttk.Entry(search_row, textvariable=self.search_var)
-        search_entry.grid(row=0, column=1, sticky="ew")
-        search_entry.bind("<KeyRelease>", lambda event: self.refresh_source_tree())
-
-        source_tree_wrap = ttk.Frame(top_card, style="Card.TFrame")
-        source_tree_wrap.grid(row=2, column=0, sticky="nsew")
-        source_tree_wrap.columnconfigure(0, weight=1)
-        source_tree_wrap.rowconfigure(0, weight=1)
-
-        self.source_tree = ttk.Treeview(
-            source_tree_wrap,
-            columns=("type", "nextrev", "status"),
-            show="headings",
-            selectmode="browse",
-            height=11,
-        )
-        self.source_tree.heading("type", text="Type")
-        self.source_tree.heading("nextrev", text="Next Rev")
-        self.source_tree.heading("status", text="Name")
-        self.source_tree.column("type", width=80, anchor="center")
-        self.source_tree.column("nextrev", width=90, anchor="center")
-        self.source_tree.column("status", width=520, anchor="w")
-        self.source_tree.grid(row=0, column=0, sticky="nsew")
-        self.source_tree.bind("<<TreeviewSelect>>", lambda event: self.sync_backup_selection_by_source())
-        self.source_tree.bind("<Double-1>", lambda event: self.backup_selected_file())
-
-        source_scroll = ttk.Scrollbar(source_tree_wrap, orient="vertical", command=self.source_tree.yview)
-        source_scroll.grid(row=0, column=1, sticky="ns")
-        self.source_tree.configure(yscrollcommand=source_scroll.set)
-
-        bottom_card = ttk.Frame(right, style="Card.TFrame", padding=16)
-        bottom_card.grid(row=1, column=0, sticky="nsew")
-        bottom_card.columnconfigure(0, weight=1)
-        bottom_card.rowconfigure(1, weight=1)
-
-        bottom_header = ttk.Frame(bottom_card, style="Card.TFrame")
-        bottom_header.grid(row=0, column=0, sticky="ew")
-        bottom_header.columnconfigure(0, weight=1)
-        ttk.Label(bottom_header, text="Available Backups", style="CardTitle.TLabel").grid(row=0, column=0, sticky="w")
-        ttk.Label(bottom_header, text="Browse revisions and restore any selected backup", style="CardSub.TLabel").grid(row=1, column=0, sticky="w", pady=(2, 0))
-
-        backup_tree_wrap = ttk.Frame(bottom_card, style="Card.TFrame")
-        backup_tree_wrap.grid(row=1, column=0, sticky="nsew", pady=(12, 0))
-        backup_tree_wrap.columnconfigure(0, weight=1)
-        backup_tree_wrap.rowconfigure(0, weight=1)
+        file_box = ttk.LabelFrame(self.backup_tab, text="Files available to back up", padding=12)
+        file_box.grid(row=3, column=0, sticky="nsew")
+        file_box.columnconfigure(0, weight=1)
+        file_box.rowconfigure(0, weight=1)
 
         self.backup_tree = ttk.Treeview(
-            backup_tree_wrap,
-            columns=("file", "rev", "modified", "size", "description"),
+            file_box,
+            columns=("filetype", "filename", "nextrev"),
             show="headings",
             selectmode="browse",
-            height=13,
         )
-        self.backup_tree.heading("file", text="Base File")
-        self.backup_tree.heading("rev", text="Rev")
-        self.backup_tree.heading("modified", text="Modified")
-        self.backup_tree.heading("size", text="Size")
-        self.backup_tree.heading("description", text="Description")
-        self.backup_tree.column("file", width=220, anchor="w")
-        self.backup_tree.column("rev", width=70, anchor="center")
-        self.backup_tree.column("modified", width=160, anchor="center")
-        self.backup_tree.column("size", width=90, anchor="center")
-        self.backup_tree.column("description", width=420, anchor="w")
+        self.backup_tree.heading("filetype", text="Type")
+        self.backup_tree.heading("filename", text="File")
+        self.backup_tree.heading("nextrev", text="Next backup")
+        self.backup_tree.column("filetype", width=90, anchor="center")
+        self.backup_tree.column("filename", width=520, anchor="w")
+        self.backup_tree.column("nextrev", width=120, anchor="center")
         self.backup_tree.grid(row=0, column=0, sticky="nsew")
-        self.backup_tree.bind("<Double-1>", lambda event: self.restore_selected_backup())
-        self.backup_tree.bind("<<TreeviewSelect>>", lambda event: self.populate_extension_choice())
+        self.backup_tree.bind("<Double-1>", lambda event: self.backup_selected_file())
 
-        backup_scroll = ttk.Scrollbar(backup_tree_wrap, orient="vertical", command=self.backup_tree.yview)
+        backup_scroll = ttk.Scrollbar(file_box, orient="vertical", command=self.backup_tree.yview)
         backup_scroll.grid(row=0, column=1, sticky="ns")
         self.backup_tree.configure(yscrollcommand=backup_scroll.set)
 
-        details = ttk.Frame(bottom_card, style="Card.TFrame")
-        details.grid(row=2, column=0, sticky="ew", pady=(12, 0))
-        details.columnconfigure(2, weight=1)
-        ttk.Label(details, text="Unknown type restore as:", background=self.colors["card"], foreground=self.colors["muted"], font=("Segoe UI", 10)).grid(row=0, column=0, sticky="w")
-        ext_box = ttk.Combobox(details, textvariable=self.ext_choice_var, values=(".py", ".html"), state="readonly", width=8)
-        ext_box.grid(row=0, column=1, sticky="w", padx=(10, 18))
-        ttk.Label(details, text="Double-click a row to restore quickly", background=self.colors["card"], foreground=self.colors["muted"], font=("Segoe UI", 10)).grid(row=0, column=2, sticky="e")
+        backup_actions = ttk.Frame(self.backup_tab, style="Card.TFrame")
+        backup_actions.grid(row=4, column=0, sticky="ew", pady=(12, 0))
+        ttk.Button(backup_actions, text="Backup Selected", style="Accent.TButton", command=self.backup_selected_file).grid(row=0, column=0, sticky="w")
+        ttk.Button(backup_actions, text="Backup All Listed", style="Secondary.TButton", command=self.backup_all_visible).grid(row=0, column=1, sticky="w", padx=(10, 0))
+
+    def _build_restore_tab(self):
+        self.restore_tab.columnconfigure(0, weight=1)
+        self.restore_tab.rowconfigure(2, weight=1)
+
+        ttk.Label(self.restore_tab, text="Restore saved backups", style="Title.TLabel").grid(row=0, column=0, sticky="w")
+        ttk.Label(self.restore_tab, text="Choose a revision and restore it back into the folder", style="CardSub.TLabel").grid(row=1, column=0, sticky="w", pady=(2, 12))
+
+        restore_box = ttk.LabelFrame(self.restore_tab, text="Available backup revisions", padding=12)
+        restore_box.grid(row=2, column=0, sticky="nsew")
+        restore_box.columnconfigure(0, weight=1)
+        restore_box.rowconfigure(0, weight=1)
+
+        self.restore_tree = ttk.Treeview(
+            restore_box,
+            columns=("file", "type", "rev", "saved", "note"),
+            show="headings",
+            selectmode="browse",
+        )
+        self.restore_tree.heading("file", text="File")
+        self.restore_tree.heading("type", text="Type")
+        self.restore_tree.heading("rev", text="Revision")
+        self.restore_tree.heading("saved", text="Saved")
+        self.restore_tree.heading("note", text="Backup label")
+        self.restore_tree.column("file", width=240, anchor="w")
+        self.restore_tree.column("type", width=90, anchor="center")
+        self.restore_tree.column("rev", width=90, anchor="center")
+        self.restore_tree.column("saved", width=160, anchor="center")
+        self.restore_tree.column("note", width=360, anchor="w")
+        self.restore_tree.grid(row=0, column=0, sticky="nsew")
+        self.restore_tree.bind("<Double-1>", lambda event: self.restore_selected_backup())
+        self.restore_tree.bind("<<TreeviewSelect>>", lambda event: self.populate_restore_extension())
+
+        restore_scroll = ttk.Scrollbar(restore_box, orient="vertical", command=self.restore_tree.yview)
+        restore_scroll.grid(row=0, column=1, sticky="ns")
+        self.restore_tree.configure(yscrollcommand=restore_scroll.set)
+
+        restore_actions = ttk.Frame(self.restore_tab, style="Card.TFrame")
+        restore_actions.grid(row=3, column=0, sticky="ew", pady=(12, 0))
+        ttk.Button(restore_actions, text="Restore Selected", style="Accent.TButton", command=self.restore_selected_backup).grid(row=0, column=0, sticky="w")
+        ttk.Button(restore_actions, text="Open Backup Folder", style="Secondary.TButton", command=self.open_backup_folder).grid(row=0, column=1, sticky="w", padx=(10, 0))
+        ttk.Label(restore_actions, text="If file type is unknown, restore as", background=self.colors["card"], foreground=self.colors["muted"], font=("Segoe UI", 10)).grid(row=0, column=2, padx=(18, 8), sticky="w")
+        ttk.Combobox(restore_actions, textvariable=self.restore_ext_var, values=(".py", ".html"), state="readonly", width=8).grid(row=0, column=3, sticky="w")
 
     def default_description(self):
         return datetime.now().strftime("backup %Y-%m-%d %H-%M")
@@ -498,213 +462,184 @@ class BackupGUI(tk.Tk):
         except Exception as exc:
             messagebox.showerror("Open failed", str(exc))
 
+    def open_working_folder(self):
+        self.open_path(self.manager.root_dir)
+
     def open_backup_folder(self):
         self.manager.ensure_backup_directory()
         self.open_path(self.manager.backup_dir)
 
-    def open_working_folder(self):
-        self.open_path(self.manager.root_dir)
-
     def refresh_all(self):
-        self.refresh_source_tree()
-        self.refresh_backup_tree()
+        html_count, py_count = self.manager.get_counts()
+        self.html_count_label.config(text=f"HTML: {html_count}")
+        self.py_count_label.config(text=f"Python: {py_count}")
+
+        self.refresh_backup_files_list()
+        total_backups = self.refresh_restore_list()
+        self.backup_count_label.config(text=f"Backups: {total_backups}")
+
         if not self.description_var.get().strip():
             self.description_var.set(self.default_description())
-        total_sources = len(self.source_tree.get_children())
-        total_backups = len(self.backup_tree.get_children())
-        self.set_status(f"Loaded {total_sources} source file(s) and {total_backups} backup revision(s)")
 
-    def refresh_source_tree(self):
-        for item in self.source_tree.get_children():
-            self.source_tree.delete(item)
-        self.source_map.clear()
+        listed_backup_files = len(self.backup_tree.get_children())
+        self.set_status(f"Showing {listed_backup_files} file(s) to back up and {total_backups} backup revision(s)")
 
-        selected_type = self.selected_type.get()
-        files = self.manager.get_files_by_type(selected_type)
-        backup_data = self.manager.get_backup_files(selected_type)
-        search = self.search_var.get().strip().lower()
-
-        for filename in files:
-            if search and search not in filename.lower():
-                continue
-            ext = Path(filename).suffix.lower().replace(".", "").upper()
-            base = Path(filename).stem
-            latest_rev = backup_data.get(base, {}).get("revisions", [])
-            next_rev = f"R{(latest_rev[0]['revision'] + 1) if latest_rev else 1:02d}"
-            iid = self.source_tree.insert("", "end", values=(ext, next_rev, filename))
-            self.source_map[iid] = filename
-
-    def refresh_backup_tree(self):
+    def refresh_backup_files_list(self):
         for item in self.backup_tree.get_children():
             self.backup_tree.delete(item)
-        self.backup_map.clear()
-        self.current_backup_rows.clear()
+        self.backup_file_map.clear()
 
-        selected_type = self.selected_type.get()
-        backup_data = self.manager.get_backup_files(selected_type)
-        search = self.search_var.get().strip().lower()
+        files = self.manager.get_files_by_type(self.selected_type.get())
+        backup_data = self.manager.get_backup_files(self.selected_type.get())
 
+        for filename in files:
+            ext = Path(filename).suffix.lower()
+            filetype = "HTML" if ext == ".html" else "Python"
+            base = Path(filename).stem
+            latest = backup_data.get(base, {}).get("revisions", [])
+            next_rev = f"R{(latest[0]['revision'] + 1) if latest else 1:02d}"
+            row = self.backup_tree.insert("", "end", values=(filetype, filename, next_rev))
+            self.backup_file_map[row] = filename
+
+    def refresh_restore_list(self):
+        for item in self.restore_tree.get_children():
+            self.restore_tree.delete(item)
+        self.restore_file_map.clear()
+
+        backup_data = self.manager.get_backup_files(self.selected_type.get())
+        count = 0
         for base_name in sorted(backup_data.keys(), key=str.lower):
-            if search and search not in base_name.lower():
-                continue
+            ext = backup_data[base_name]["extension"]
+            filetype = "HTML" if ext == ".html" else "Python" if ext == ".py" else "Unknown"
             for rev in backup_data[base_name]["revisions"]:
-                modified = rev["modified"].strftime("%Y-%m-%d %H:%M")
-                size = self.manager.human_size(rev["size"])
-                row = self.backup_tree.insert(
+                row = self.restore_tree.insert(
                     "",
                     "end",
-                    values=(base_name, f"R{rev['revision']:02d}", modified, size, rev["description"]),
+                    values=(
+                        base_name,
+                        filetype,
+                        f"R{rev['revision']:02d}",
+                        rev["modified"].strftime("%Y-%m-%d %H:%M"),
+                        rev["description"],
+                    ),
                 )
-                self.backup_map[row] = {
+                self.restore_file_map[row] = {
                     "base_name": base_name,
+                    "extension": ext,
                     "backup": rev,
-                    "extension": backup_data[base_name]["extension"],
                 }
-                self.current_backup_rows.append(row)
+                count += 1
+        return count
 
-    def get_selected_source_file(self):
-        selection = self.source_tree.selection()
-        if not selection:
-            return None
-        return self.source_map.get(selection[0])
-
-    def get_selected_backup(self):
+    def get_selected_backup_source(self):
         selection = self.backup_tree.selection()
         if not selection:
             return None
-        return self.backup_map.get(selection[0])
+        return self.backup_file_map.get(selection[0])
+
+    def get_selected_restore_backup(self):
+        selection = self.restore_tree.selection()
+        if not selection:
+            return None
+        return self.restore_file_map.get(selection[0])
 
     def set_timestamp_description(self):
         self.description_var.set(self.default_description())
 
     def backup_selected_file(self):
-        filename = self.get_selected_source_file()
+        filename = self.get_selected_backup_source()
         if not filename:
-            messagebox.showinfo("Select file", "Select a source file first.")
+            messagebox.showinfo("Select file", "Select a file from the Backup tab first.")
             return
 
         description = self.description_var.get().strip() or self.default_description()
         try:
             result = self.manager.create_backup(filename, description)
+            self.refresh_all()
+            self.select_restore_by_filename(result["filename"])
+            self.notebook.select(self.restore_tab)
             self.set_status(f"Created {result['filename']}")
-            if self.auto_refresh_var.get():
-                self.refresh_all()
-                self.select_backup_by_filename(result["filename"])
         except Exception as exc:
             messagebox.showerror("Backup failed", str(exc))
 
     def backup_all_visible(self):
-        visible_rows = self.source_tree.get_children()
-        if not visible_rows:
-            messagebox.showinfo("No files", "No visible source files to back up.")
+        rows = self.backup_tree.get_children()
+        if not rows:
+            messagebox.showinfo("No files", "There are no files listed to back up.")
             return
 
         description = self.description_var.get().strip() or self.default_description()
         count = 0
-        failed = []
-        last_file = None
+        errors = []
+        last_filename = None
 
-        for row in visible_rows:
-            filename = self.source_map.get(row)
+        for row in rows:
+            filename = self.backup_file_map.get(row)
             if not filename:
                 continue
             try:
                 result = self.manager.create_backup(filename, description)
                 count += 1
-                last_file = result["filename"]
+                last_filename = result["filename"]
             except Exception as exc:
-                failed.append(f"{filename}: {exc}")
+                errors.append(f"{filename}: {exc}")
 
-        if self.auto_refresh_var.get():
-            self.refresh_all()
-        if last_file:
-            self.select_backup_by_filename(last_file)
+        self.refresh_all()
+        if last_filename:
+            self.select_restore_by_filename(last_filename)
 
-        if failed:
+        if errors:
             messagebox.showwarning(
-                "Backup completed with issues",
-                f"Created {count} backup(s).\n\nIssues:\n" + "\n".join(failed[:10]),
+                "Backup finished",
+                f"Created {count} backup(s).\n\nSome files had issues:\n" + "\n".join(errors[:10]),
             )
         else:
             self.set_status(f"Created {count} backup(s)")
+            self.notebook.select(self.restore_tab)
+
+    def populate_restore_extension(self):
+        data = self.get_selected_restore_backup()
+        if not data:
+            return
+        if data["extension"] in (".py", ".html"):
+            self.restore_ext_var.set(data["extension"])
 
     def restore_selected_backup(self):
-        data = self.get_selected_backup()
+        data = self.get_selected_restore_backup()
         if not data:
-            messagebox.showinfo("Select backup", "Select a backup revision first.")
+            messagebox.showinfo("Select backup", "Select a backup revision from the Restore tab first.")
             return
 
+        target_ext = data["extension"] if data["extension"] != "unknown" else self.restore_ext_var.get()
         backup_filename = data["backup"]["filename"]
-        target_ext = data["extension"]
-        if target_ext == "unknown":
-            target_ext = self.ext_choice_var.get()
+        target_name = f"{data['base_name']}{target_ext}"
 
-        target_name = f"{data['base_name']}{target_ext if target_ext != 'unknown' else ''}"
-        confirm = messagebox.askyesno(
+        ok = messagebox.askyesno(
             "Confirm restore",
-            f"Restore:\n{backup_filename}\n\nTo:\n{target_name}\n\nA safety copy will be created if the target already exists.",
+            f"Restore this backup?\n\n{backup_filename}\n\nTarget file:\n{target_name}\n\nIf the target already exists, a .before_restore safety copy will be created.",
         )
-        if not confirm:
+        if not ok:
             return
 
         try:
             result = self.manager.restore_backup(backup_filename, target_ext=target_ext)
-            msg = f"Restored to:\n{result['target']}"
+            self.refresh_all()
+            message = f"Restored to:\n{result['target']}"
             if result["safety"]:
-                msg += f"\n\nSafety copy:\n{result['safety']}"
+                message += f"\n\nSafety copy created:\n{result['safety']}"
             self.set_status(f"Restored {backup_filename}")
-            if self.auto_refresh_var.get():
-                self.refresh_all()
-            messagebox.showinfo("Restore complete", msg)
+            messagebox.showinfo("Restore complete", message)
         except Exception as exc:
             messagebox.showerror("Restore failed", str(exc))
 
-    def sync_backup_selection_by_source(self):
-        filename = self.get_selected_source_file()
-        if not filename:
-            return
-        base = Path(filename).stem
-        for row, data in self.backup_map.items():
-            if data["base_name"] == base:
-                self.backup_tree.selection_set(row)
-                self.backup_tree.focus(row)
-                self.backup_tree.see(row)
-                self.populate_extension_choice()
-                break
-
-    def select_backup_by_filename(self, backup_filename):
-        for row, data in self.backup_map.items():
+    def select_restore_by_filename(self, backup_filename):
+        for row, data in self.restore_file_map.items():
             if data["backup"]["filename"] == backup_filename:
-                self.backup_tree.selection_set(row)
-                self.backup_tree.focus(row)
-                self.backup_tree.see(row)
-                self.populate_extension_choice()
+                self.restore_tree.selection_set(row)
+                self.restore_tree.focus(row)
+                self.restore_tree.see(row)
+                self.populate_restore_extension()
                 return
-
-    def populate_extension_choice(self):
-        data = self.get_selected_backup()
-        if not data:
-            return
-        ext = data["extension"]
-        if ext in (".py", ".html"):
-            self.ext_choice_var.set(ext)
-
-    def copy_selected_backup_name(self):
-        data = self.get_selected_backup()
-        if not data:
-            messagebox.showinfo("Select backup", "Select a backup revision first.")
-            return
-        backup_filename = data["backup"]["filename"]
-        self.clipboard_clear()
-        self.clipboard_append(backup_filename)
-        self.set_status(f"Copied {backup_filename}")
-
-    def open_selected_backup_file(self):
-        data = self.get_selected_backup()
-        if not data:
-            messagebox.showinfo("Select backup", "Select a backup revision first.")
-            return
-        self.open_path(data["backup"]["path"])
 
 
 if __name__ == "__main__":
