@@ -220,6 +220,8 @@ class App(tk.Tk):
         self.repo = None
         self._committed = False   # tracks whether there's something ready to push
         self._build()
+        self.bind("<Control-x>", lambda e: self._do_auto())
+        self.bind("<Control-p>", lambda e: self._do_push())
         self.after(100, self._startup)
 
     def _center(self, w, h):
@@ -298,11 +300,22 @@ class App(tk.Tk):
         tk.Label(pf, text="Send committed changes to GitHub:",
                  font=("Segoe UI", 9), bg=BG, fg=DIM).pack(anchor="w", pady=(4, 6))
 
-        self._push_btn = btn(pf, "⬆  Push to GitHub", self._do_push, BLUE, BLUE_HV)
-        self._push_btn.pack(side="left")
+        btn_row = tk.Frame(pf, bg=BG)
+        btn_row.pack(fill="x")
 
-        btn(pf, "⚡ Auto Commit & Push", self._do_auto,
-            "#6e40c9", "#8957e5").pack(side="left", padx=(10, 0))
+        push_col = tk.Frame(btn_row, bg=BG)
+        push_col.pack(side="left")
+        self._push_btn = btn(push_col, "⬆  Push to GitHub", self._do_push, BLUE, BLUE_HV)
+        self._push_btn.pack()
+        tk.Label(push_col, text="Ctrl+P", font=("Segoe UI", 8),
+                 bg=BG, fg=DIM).pack(pady=(3, 0))
+
+        auto_col = tk.Frame(btn_row, bg=BG)
+        auto_col.pack(side="left", padx=(10, 0))
+        btn(auto_col, "⚡ Commit / Push / Close", self._do_auto,
+            "#6e40c9", "#8957e5").pack()
+        tk.Label(auto_col, text="Ctrl+X", font=("Segoe UI", 8),
+                 bg=BG, fg=DIM).pack(pady=(3, 0))
 
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x", pady=(6, 0))
 
