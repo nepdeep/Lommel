@@ -785,15 +785,42 @@ input[type=range]::-moz-range-thumb {
           </div>
         </div>
         <div class="asset-stats">
-          <div class="a-stat">
-            <p class="as-l">Units to buy</p>
+          <div class="a-stat" style="position:relative;cursor:pointer;" onclick="togglePopup('btc-units-popup',event)" onmouseenter="showPopup('btc-units-popup')" onmouseleave="hidePopup('btc-units-popup')">
+            <p class="as-l">Units to buy <span class="hover-hint">hover</span></p>
             <p class="as-v btc-col" id="btc-units">—</p>
             <p class="as-s" id="btc-units-sub">—</p>
+            <div id="btc-units-popup" class="tt-popup tt-light" style="bottom:calc(100% + 8px);left:0;transform:none;min-width:210px;">
+              <div class="tt-title" style="color:var(--faint);">How units are calculated</div>
+              <table style="width:100%;border-collapse:collapse;">
+                <tr class="bp-row lp"><td class="bp-label lp">Available cash</td><td class="bp-amt lp" id="bu-cash">—</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">÷ 2 (50% allocated)</td><td class="bp-amt lp" id="bu-half">—</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">÷ BTC price</td><td class="bp-amt lp" id="bu-price">—</td></tr>
+                <tr style="border-top:1px solid var(--border);">
+                  <td style="padding:6px 4px 2px;font-size:11px;font-weight:600;font-family:var(--mono);color:var(--btc);">= BTC you get</td>
+                  <td style="padding:6px 4px 2px;font-size:12px;font-weight:600;font-family:var(--mono);text-align:right;color:var(--btc);" id="bu-result">—</td>
+                </tr>
+              </table>
+              <div class="tt-arrow tt-arrow-light" style="left:20%;"></div>
+            </div>
           </div>
-          <div class="a-stat">
-            <p class="as-l">After <span class="proj-years-btc">10</span> yrs</p>
+          <div class="a-stat" style="position:relative;cursor:pointer;" onclick="togglePopup('btc-proj-popup',event)" onmouseenter="showPopup('btc-proj-popup')" onmouseleave="hidePopup('btc-proj-popup')">
+            <p class="as-l">After <span class="proj-years-btc">10</span> yrs <span class="hover-hint">hover</span></p>
             <p class="as-v pos-col" id="btc-proj">—</p>
             <p class="as-s" id="btc-gain">—</p>
+            <div id="btc-proj-popup" class="tt-popup tt-light" style="bottom:calc(100% + 8px);right:0;left:auto;transform:none;min-width:210px;">
+              <div class="tt-title" style="color:var(--faint);">Compound growth formula</div>
+              <table style="width:100%;border-collapse:collapse;">
+                <tr class="bp-row lp"><td class="bp-label lp">Starting amount</td><td class="bp-amt lp" id="bp-btc-start">—</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">Annual growth rate</td><td class="bp-amt lp" id="bp-btc-rate">—</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">Years</td><td class="bp-amt lp" id="bp-btc-yrs">—</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp" style="font-style:italic;font-size:10px;" colspan="2">start × (1 + rate)^years</td></tr>
+                <tr style="border-top:1px solid var(--border);">
+                  <td style="padding:6px 4px 2px;font-size:11px;font-weight:600;font-family:var(--mono);color:var(--pos);">= Projected value</td>
+                  <td style="padding:6px 4px 2px;font-size:12px;font-weight:600;font-family:var(--mono);text-align:right;color:var(--pos);" id="bp-btc-result">—</td>
+                </tr>
+              </table>
+              <div class="tt-arrow tt-arrow-light" style="left:75%;"></div>
+            </div>
           </div>
         </div>
         <div class="growth-slider">
@@ -818,15 +845,42 @@ input[type=range]::-moz-range-thumb {
           </div>
         </div>
         <div class="asset-stats">
-          <div class="a-stat">
-            <p class="as-l">Shares to buy</p>
+          <div class="a-stat" style="position:relative;cursor:pointer;" onclick="togglePopup('tsla-units-popup',event)" onmouseenter="showPopup('tsla-units-popup')" onmouseleave="hidePopup('tsla-units-popup')">
+            <p class="as-l">Shares to buy <span class="hover-hint">hover</span></p>
             <p class="as-v tsla-col" id="tsla-units">—</p>
             <p class="as-s" id="tsla-units-sub">—</p>
+            <div id="tsla-units-popup" class="tt-popup tt-light" style="bottom:calc(100% + 8px);left:0;transform:none;min-width:210px;">
+              <div class="tt-title" style="color:var(--faint);">How shares are calculated</div>
+              <table style="width:100%;border-collapse:collapse;">
+                <tr class="bp-row lp"><td class="bp-label lp">Available cash</td><td class="bp-amt lp" id="tu-cash">—</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">÷ 2 (50% allocated)</td><td class="bp-amt lp" id="tu-half">—</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">÷ Share price</td><td class="bp-amt lp" id="tu-price">—</td></tr>
+                <tr style="border-top:1px solid var(--border);">
+                  <td style="padding:6px 4px 2px;font-size:11px;font-weight:600;font-family:var(--mono);color:var(--tsla);">= Shares you get</td>
+                  <td style="padding:6px 4px 2px;font-size:12px;font-weight:600;font-family:var(--mono);text-align:right;color:var(--tsla);" id="tu-result">—</td>
+                </tr>
+              </table>
+              <div class="tt-arrow tt-arrow-light" style="left:20%;"></div>
+            </div>
           </div>
-          <div class="a-stat">
-            <p class="as-l">After <span class="proj-years-tsla">10</span> yrs</p>
+          <div class="a-stat" style="position:relative;cursor:pointer;" onclick="togglePopup('tsla-proj-popup',event)" onmouseenter="showPopup('tsla-proj-popup')" onmouseleave="hidePopup('tsla-proj-popup')">
+            <p class="as-l">After <span class="proj-years-tsla">10</span> yrs <span class="hover-hint">hover</span></p>
             <p class="as-v pos-col" id="tsla-proj">—</p>
             <p class="as-s" id="tsla-gain">—</p>
+            <div id="tsla-proj-popup" class="tt-popup tt-light" style="bottom:calc(100% + 8px);right:0;left:auto;transform:none;min-width:210px;">
+              <div class="tt-title" style="color:var(--faint);">Compound growth formula</div>
+              <table style="width:100%;border-collapse:collapse;">
+                <tr class="bp-row lp"><td class="bp-label lp">Starting amount</td><td class="bp-amt lp" id="bp-tsla-start">—</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">Annual growth rate</td><td class="bp-amt lp" id="bp-tsla-rate">—</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">Years</td><td class="bp-amt lp" id="bp-tsla-yrs">—</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp" style="font-style:italic;font-size:10px;" colspan="2">start × (1 + rate)^years</td></tr>
+                <tr style="border-top:1px solid var(--border);">
+                  <td style="padding:6px 4px 2px;font-size:11px;font-weight:600;font-family:var(--mono);color:var(--pos);">= Projected value</td>
+                  <td style="padding:6px 4px 2px;font-size:12px;font-weight:600;font-family:var(--mono);text-align:right;color:var(--pos);" id="bp-tsla-result">—</td>
+                </tr>
+              </table>
+              <div class="tt-arrow tt-arrow-light" style="left:75%;"></div>
+            </div>
           </div>
         </div>
         <div class="growth-slider">
@@ -854,10 +908,24 @@ input[type=range]::-moz-range-thumb {
         <span class="ci-val tsla-col" id="comb-tsla-val">—</span>
       </div>
       <span class="comb-sep">=</span>
-      <div class="comb-total">
-        <span class="ct-label">Combined after <span id="comb-years">10</span> yrs</span>
+      <div class="comb-total" style="position:relative;cursor:pointer;" onclick="togglePopup('comb-popup',event)" onmouseenter="showPopup('comb-popup')" onmouseleave="hidePopup('comb-popup')">
+        <span class="ct-label">Combined after <span id="comb-years">10</span> yrs <span class="hover-hint" style="border-color:var(--border-strong);opacity:0.5;">hover</span></span>
         <span class="ct-val" id="comb-total">—</span>
         <span class="ct-gain" id="comb-gain">—</span>
+        <div id="comb-popup" class="tt-popup tt-light" style="bottom:calc(100% + 8px);right:0;left:auto;transform:none;min-width:220px;">
+          <div class="tt-title" style="color:var(--faint);">Combined portfolio breakdown</div>
+          <table style="width:100%;border-collapse:collapse;">
+            <tr class="bp-row lp"><td class="bp-label lp">Cash allocated total</td><td class="bp-amt lp" id="cp-cash">—</td></tr>
+            <tr class="bp-row lp"><td class="bp-label lp" style="color:var(--btc);">BTC 50% → projected</td><td class="bp-amt lp" style="color:var(--btc);" id="cp-btc">—</td></tr>
+            <tr class="bp-row lp"><td class="bp-label lp" style="color:var(--tsla);">TSLA 50% → projected</td><td class="bp-amt lp" style="color:var(--tsla);" id="cp-tsla">—</td></tr>
+            <tr class="bp-row lp"><td class="bp-label lp">Total gain</td><td class="bp-amt lp" id="cp-gain">—</td></tr>
+            <tr style="border-top:1px solid var(--border);">
+              <td style="padding:6px 4px 2px;font-size:11px;font-weight:600;font-family:var(--mono);color:var(--pos);">= Combined value</td>
+              <td style="padding:6px 4px 2px;font-size:12px;font-weight:600;font-family:var(--mono);text-align:right;color:var(--pos);" id="cp-result">—</td>
+            </tr>
+          </table>
+          <div class="tt-arrow tt-arrow-light" style="left:75%;"></div>
+        </div>
       </div>
     </div>
 
@@ -1107,6 +1175,38 @@ input[type=range]::-moz-range-thumb {
     document.getElementById('comb-total').textContent    = fmt(combined);
     document.getElementById('comb-years').textContent    = years;
     document.getElementById('comb-gain').textContent     = '+' + fmt(combinedGain) + ' total gain (' + Math.round((combinedGain / (cashBalance || 1)) * 100) + '%)';
+
+    // Sync investment tooltips
+    // BTC units popup
+    document.getElementById('bu-cash').textContent   = fmt(cashBalance);
+    document.getElementById('bu-half').textContent   = fmt(half);
+    document.getElementById('bu-price').textContent  = fmt(btcPrice) + '/BTC';
+    document.getElementById('bu-result').textContent = fmtN(btcUnits) + ' BTC';
+
+    // BTC projection popup
+    document.getElementById('bp-btc-start').textContent  = fmt(half);
+    document.getElementById('bp-btc-rate').textContent   = Math.round(btcGrowth * 100) + '% / yr';
+    document.getElementById('bp-btc-yrs').textContent    = years + ' yrs';
+    document.getElementById('bp-btc-result').textContent = fmt(btcProj);
+
+    // TSLA units popup
+    document.getElementById('tu-cash').textContent   = fmt(cashBalance);
+    document.getElementById('tu-half').textContent   = fmt(half);
+    document.getElementById('tu-price').textContent  = '€' + tslaPrice + '/share';
+    document.getElementById('tu-result').textContent = Math.floor(tslaUnits).toLocaleString('de-DE') + ' shares';
+
+    // TSLA projection popup
+    document.getElementById('bp-tsla-start').textContent  = fmt(half);
+    document.getElementById('bp-tsla-rate').textContent   = Math.round(tslaGrowth * 100) + '% / yr';
+    document.getElementById('bp-tsla-yrs').textContent    = years + ' yrs';
+    document.getElementById('bp-tsla-result').textContent = fmt(tslaProj);
+
+    // Combined popup
+    document.getElementById('cp-cash').textContent   = fmt(cashBalance);
+    document.getElementById('cp-btc').textContent    = fmt(btcProj);
+    document.getElementById('cp-tsla').textContent   = fmt(tslaProj);
+    document.getElementById('cp-gain').textContent   = '+' + fmt(combinedGain) + ' (' + Math.round((combinedGain / (cashBalance || 1)) * 100) + '%)';
+    document.getElementById('cp-result').textContent = fmt(combined);
 
     renderChart(btcGrowth, tslaGrowth, years);
   }

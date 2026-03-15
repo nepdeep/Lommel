@@ -1,6 +1,14 @@
 """
 GitPushUI.py  —  Simple Git Push Tool
-Just point it at a folder, type a commit message, and hit Push.
+
+Startup:
+  - If already inside a cloned repo  -> load it directly, skip clone dialog
+  - If not                           -> show clone/open dialog
+
+Workflow:
+  1. App auto-detects + stages all changed files
+  2. Type commit message -> click Commit
+  3. Click Push to send to GitHub
 """
 
 import subprocess
@@ -24,7 +32,7 @@ DIM      = "#8b949e"
 MONO     = ("Consolas", 10)
 BOLD     = ("Segoe UI Semibold", 11)
 
-# ── Helpers ───────────────────────────────────
+# ── Git helpers ───────────────────────────────
 
 def git(args, cwd):
     return subprocess.run(
@@ -51,19 +59,28 @@ def btn(parent, label, cmd, bg, hv, **kw):
     b.bind("<Leave>", lambda e: b.config(bg=bg))
     return b
 
-# ── App ───────────────────────────────────────
+def styled_entry(parent, **kw):
+    return tk.Entry(parent, font=MONO, bg=SURFACE, fg=FG,
+                    insertbackground=FG, relief="flat",
+                    highlightthickness=1, highlightbackground=BORDER,
+                    highlightcolor=BLUE, **kw)
 
-class App(tk.Tk):
-    def __init__(self):
-        super().__init__()
-        self.title("Git Push UI")
+
+# ─────────────────────────────────────────────
+#  Clone / Open dialog  (only shown when no repo found)
+# ─────────────────────────────────────────────
+
+class CloneDialog(tk.Toplevel):
+    def __init__(self, master, on_ready):
+        super().__init__(master)
+        self.on_ready = on_ready
+        self.title("Connect to GitHub Repo")
         self.configure(bg=BG)
-        self.resizable(True, True)
-        self.minsize(600, 480)
-        self._center(700, 560)
-        self.repo = None
+        self.resizable(False, False)
+        self.grab_set()
+        self.protocol("WM_DELETE_WINDOW", master.destroy)
+        self._center(560, 390)
         self._build()
-        self.after(100, self._load_default_repo)
 
     def _center(self, w, h):
         self.geometry(f"{w}x{h}")
@@ -73,17 +90,157 @@ class App(tk.Tk):
         self.geometry(f"{w}x{h}+{x}+{y}")
 
     def _build(self):
-        # ── Top bar ──
+        hdr = tk.Frame(self, bg=SURFACE, pady=16)
+        hdr.pack(fill="x")
+        tk.Label(hdr, text="  Connect to GitHub Repo",
+                 font=("Segoe UI Semibold", 13), bg=SURFACE, fg=FG).pack(side="left")
+        tk.Frame(self, bg=BORDER, height=1).pack(fill="x")
+
+        body = tk.Frame(self, bg=BG, padx=24, pady=20)
+        body.pack(fill="both", expand=True)
+
+        # Option 1: Clone
+        tk.Label(body, text="Option 1 — Clone from GitHub",
+                 font=BOLD, bg=BG, fg=FG).pack(anchor="w")
+        tk.Label(body, text="GitHub repo URL:",
+                 font=("Segoe UI", 9), bg=BG, fg=DIM).pack(anchor="w", pady=(8,2))
+
+        self._url = styled_entry(body)
+        self._url.pack(fill="x", ipady=8)
+        self._url.insert(0, "https://github.com/user/repo.git")
+        self._url.config(fg=DIM)
+        self._url.bind("<FocusIn>",  self._url_in)
+        self._url.bind("<FocusOut>", self._url_out)
+
+        tk.Label(body, text="Clone into folder:",
+                 font=("Segoe UI", 9), bg=BG, fg=DIM).pack(anchor="w", pady=(10,2))
+        fr = tk.Frame(body, bg=BG)
+        fr.pack(fill="x")
+        self._dest = styled_entry(fr)
+        self._dest.pack(side="left", fill="x", expand=True, ipady=8, padx=(0,8))
+        self._dest.insert(0, str(Path.home() / "Documents"))
+        btn(fr, "Browse", self._pick_dest, SURFACE, BORDER, pady=6).pack(side="left")
+
+        self._err = tk.Label(body, text="", font=("Segoe UI", 9), bg=BG, fg=RED)
+        self._err.pack(anchor="w", pady=(6,0))
+        btn(body, "Clone & Open", self._do_clone,
+            GREEN, GREEN_HV).pack(anchor="e", pady=(4,0))
+
+        tk.Frame(body, bg=BORDER, height=1).pack(fill="x", pady=(16,12))
+
+        # Option 2: Open existing
+        tk.Label(body, text="Option 2 — Open existing local repo",
+                 font=BOLD, bg=BG, fg=FG).pack(anchor="w")
+        btn(body, "Open Local Folder", self._open_local,
+            SURFACE, BORDER, pady=6).pack(anchor="w", pady=(8,0))
+
+    def _url_in(self, e):
+        if self._url.get() == "https://github.com/user/repo.git":
+            self._url.delete(0, "end")
+            self._url.config(fg=FG)
+
+    def _url_out(self, e):
+        if not self._url.get().strip():
+            self._url.insert(0, "https://github.com/user/repo.git")
+            self._url.config(fg=DIM)
+
+    def _pick_dest(self):
+        d = filedialog.askdirectory(title="Choose folder to clone into")
+        if d:
+            self._dest.delete(0, "end")
+            self._dest.insert(0, d)
+
+    def _do_clone(self):
+        url  = self._url.get().strip()
+        dest = self._dest.get().strip()
+
+        if not url or url == "https://github.com/user/repo.git":
+            self._err.config(text="Please enter a GitHub repo URL.", fg=RED); return
+        if not dest:
+            self._err.config(text="Please choose a destination folder.", fg=RED); return
+
+        dest_path = Path(dest)
+        if not dest_path.exists():
+            self._err.config(text="Destination folder does not exist.", fg=RED); return
+
+        repo_name  = url.rstrip("/").split("/")[-1].replace(".git", "")
+        clone_into = dest_path / repo_name
+
+        # Already cloned? Just open it.
+        if clone_into.exists() and (clone_into / ".git").exists():
+            self._err.config(text="Already cloned — opening existing copy.", fg=YELLOW)
+            self.after(600, lambda: self._finish(clone_into))
+            return
+
+        self._err.config(text=f"Cloning into {clone_into} ...", fg=YELLOW)
+        self.update()
+
+        r = subprocess.run(
+            ["git", "clone", url, str(clone_into)],
+            text=True, capture_output=True, shell=False
+        )
+        if r.returncode == 0:
+            self._err.config(text="Cloned successfully!", fg=GREEN)
+            self.after(600, lambda: self._finish(clone_into))
+        else:
+            self._err.config(text=f"Clone failed: {r.stderr.strip()}", fg=RED)
+
+    def _open_local(self):
+        d = filedialog.askdirectory(title="Select your local repo folder")
+        if not d:
+            return
+        repo = find_repo(d)
+        if repo:
+            self._finish(repo)
+        else:
+            self._err.config(
+                text="No git repo found there. Clone first using Option 1.", fg=RED)
+
+    def _finish(self, repo_path):
+        self.destroy()
+        self.on_ready(Path(repo_path))
+
+
+# ─────────────────────────────────────────────
+#  Main App
+# ─────────────────────────────────────────────
+
+class App(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Git Push UI")
+        self.configure(bg=BG)
+        self.resizable(True, True)
+        self.minsize(600, 520)
+        self._center(700, 620)
+        self.repo = None
+        self._committed = False   # tracks whether there's something ready to push
+        self._build()
+        self.after(100, self._startup)
+
+    def _center(self, w, h):
+        self.geometry(f"{w}x{h}")
+        self.update_idletasks()
+        x = (self.winfo_screenwidth()  - w) // 2
+        y = (self.winfo_screenheight() - h) // 2
+        self.geometry(f"{w}x{h}+{x}+{y}")
+
+    # ── Build UI ──────────────────────────────
+
+    def _build(self):
+        # Top bar
         top = tk.Frame(self, bg=SURFACE, pady=12)
         top.pack(fill="x")
-        tk.Label(top, text="  Git Push UI", font=("Segoe UI Semibold", 13),
-                 bg=SURFACE, fg=FG).pack(side="left")
-        btn(top, "Change Folder", self._pick_folder,
+        tk.Label(top, text="  Git Push UI",
+                 font=("Segoe UI Semibold", 13), bg=SURFACE, fg=FG).pack(side="left")
+        btn(top, "Change Repo", self._change_repo,
             SURFACE, BORDER, pady=5).pack(side="right", padx=10)
+        btn(top, "Pull Latest", self._do_pull,
+            SURFACE, BORDER, pady=5).pack(side="right", padx=(0, 4))
 
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x")
 
-        # ── Repo path ──
+        # Repo path
         rf = tk.Frame(self, bg=BG, padx=16, pady=8)
         rf.pack(fill="x")
         tk.Label(rf, text="Folder:", font=BOLD, bg=BG, fg=DIM).pack(side="left")
@@ -92,39 +249,49 @@ class App(tk.Tk):
 
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x")
 
-        # ── Status ──
+        # Status (changed files)
         sf = tk.Frame(self, bg=BG, padx=16, pady=10)
         sf.pack(fill="x")
-        self._status_var = tk.StringVar(value="No repo loaded")
+        tk.Label(sf, text="Status", font=BOLD, bg=BG, fg=DIM).pack(anchor="w")
+        self._status_var = tk.StringVar(value="Waiting for repo...")
         self._status_lbl = tk.Label(sf, textvariable=self._status_var,
                                     font=("Segoe UI", 10), bg=BG, fg=DIM,
                                     wraplength=660, justify="left")
-        self._status_lbl.pack(anchor="w")
+        self._status_lbl.pack(anchor="w", pady=(4, 0))
 
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x")
 
-        # ── Commit message ──
-        mf = tk.Frame(self, bg=BG, padx=16, pady=14)
-        mf.pack(fill="x")
-        tk.Label(mf, text="Commit message:", font=BOLD,
-                 bg=BG, fg=DIM).pack(anchor="w")
-        mr = tk.Frame(mf, bg=BG)
-        mr.pack(fill="x", pady=(6, 0))
-        self._msg = tk.Entry(mr, font=MONO, bg=SURFACE, fg=FG,
-                             insertbackground=FG, relief="flat",
-                             highlightthickness=1,
-                             highlightbackground=BORDER,
-                             highlightcolor=GREEN)
-        self._msg.pack(side="left", fill="x", expand=True, ipady=9, padx=(0,10))
-        self._msg.bind("<Return>", lambda e: self._push())
+        # ── Commit section ──
+        cf = tk.Frame(self, bg=BG, padx=16, pady=14)
+        cf.pack(fill="x")
+        tk.Label(cf, text="Step 1 — Commit", font=BOLD, bg=BG, fg=DIM).pack(anchor="w")
+        tk.Label(cf, text="Describe what you changed:",
+                 font=("Segoe UI", 9), bg=BG, fg=DIM).pack(anchor="w", pady=(4, 2))
 
-        # ── Big push button ──
-        self._push_btn = btn(mr, "⬆  Push to GitHub", self._push, BLUE, BLUE_HV)
-        self._push_btn.pack(side="left")
+        msg_row = tk.Frame(cf, bg=BG)
+        msg_row.pack(fill="x", pady=(4, 0))
+        self._msg = styled_entry(msg_row)
+        self._msg.pack(side="left", fill="x", expand=True, ipady=9, padx=(0, 10))
+        self._msg.bind("<Return>", lambda e: self._do_commit())
 
-        tk.Frame(self, bg=BORDER, height=1).pack(fill="x", pady=(10,0))
+        self._commit_btn = btn(msg_row, "Commit", self._do_commit, GREEN, GREEN_HV)
+        self._commit_btn.pack(side="left")
 
-        # ── Log ──
+        tk.Frame(self, bg=BORDER, height=1).pack(fill="x")
+
+        # ── Push section ──
+        pf = tk.Frame(self, bg=BG, padx=16, pady=14)
+        pf.pack(fill="x")
+        tk.Label(pf, text="Step 2 — Push", font=BOLD, bg=BG, fg=DIM).pack(anchor="w")
+        tk.Label(pf, text="Send committed changes to GitHub:",
+                 font=("Segoe UI", 9), bg=BG, fg=DIM).pack(anchor="w", pady=(4, 6))
+
+        self._push_btn = btn(pf, "⬆  Push to GitHub", self._do_push, BLUE, BLUE_HV)
+        self._push_btn.pack(anchor="w")
+
+        tk.Frame(self, bg=BORDER, height=1).pack(fill="x", pady=(6, 0))
+
+        # Log
         lh = tk.Frame(self, bg=BG, padx=16, pady=6)
         lh.pack(fill="x")
         tk.Label(lh, text="Log", font=BOLD, bg=BG, fg=DIM).pack(side="left")
@@ -138,71 +305,88 @@ class App(tk.Tk):
             insertbackground=FG, relief="flat",
             state="disabled", wrap="word", padx=12, pady=10,
             highlightthickness=0)
-        self._log_box.pack(fill="both", expand=True, padx=16, pady=(0,16))
+        self._log_box.pack(fill="both", expand=True, padx=16, pady=(0, 16))
         self._log_box.tag_config("ok",   foreground=GREEN)
         self._log_box.tag_config("err",  foreground=RED)
         self._log_box.tag_config("warn", foreground=YELLOW)
         self._log_box.tag_config("dim",  foreground=DIM)
 
-    # ── Repo loading ──────────────────────────
+    # ── Startup: check for existing repo first ─
 
-    def _load_default_repo(self):
+    def _startup(self):
+        # Check 1: argument passed to script
         start = sys.argv[1] if len(sys.argv) > 1 else None
-        repo  = find_repo(start)
-        if repo:
-            self._set_repo(repo)
-        else:
-            self._log("No repo found — use 'Change Folder' to pick one.", "warn")
-            self._status_var.set("No repo loaded")
+        repo  = find_repo(start) if start else None
 
-    def _pick_folder(self):
-        d = filedialog.askdirectory(title="Select your project folder")
-        if not d:
-            return
-        repo = find_repo(d)
+        # Check 2: current working directory
+        if not repo:
+            repo = find_repo(Path.cwd())
+
+        # Check 3: same folder as the script itself
+        if not repo:
+            repo = find_repo(Path(__file__).parent)
+
         if repo:
+            self._log(f"Found existing repo — skipping clone.", "ok")
             self._set_repo(repo)
         else:
-            if messagebox.askyesno("Init repo?",
-                    f"No git repo found in:\n{d}\n\nInitialise one here?"):
-                r = git(["init"], Path(d))
-                if r.returncode == 0:
-                    self._set_repo(Path(d))
-                    self._log("git init done. Add a remote URL via:\n"
-                              "  git remote add origin https://github.com/USER/REPO.git", "warn")
-                else:
-                    messagebox.showerror("Error", r.stderr)
+            self._log("No local repo found — opening setup.", "dim")
+            CloneDialog(self, on_ready=self._set_repo)
+
+    def _change_repo(self):
+        CloneDialog(self, on_ready=self._set_repo)
+
+    # ── Repo ──────────────────────────────────
 
     def _set_repo(self, repo):
-        self.repo = repo
-        self._repo_lbl.config(text=str(repo))
+        self.repo = Path(repo)
+        self._repo_lbl.config(text=str(self.repo))
         self._refresh_status()
-        self._log(f"Loaded: {repo}", "dim")
+        self._log(f"Repo: {self.repo}", "dim")
 
     def _refresh_status(self):
         if not self.repo:
             return
-        r = git(["status", "--short"], self.repo)
+        r     = git(["status", "--short"], self.repo)
         lines = [l for l in r.stdout.strip().splitlines() if l.strip()]
+
         remote_r = git(["remote", "get-url", "origin"], self.repo)
-        remote = remote_r.stdout.strip() if remote_r.returncode == 0 else None
+        remote   = remote_r.stdout.strip() if remote_r.returncode == 0 else None
 
         if not remote:
-            self._status_var.set("No remote set — add one with: git remote add origin <url>")
+            self._status_var.set("No GitHub remote set.")
             self._status_lbl.config(fg=RED)
         elif lines:
-            self._status_var.set(f"{len(lines)} file(s) changed — ready to push")
+            flist = "\n  ".join(lines[:8])
+            extra = f"  ... and {len(lines)-8} more" if len(lines) > 8 else ""
+            self._status_var.set(
+                f"{len(lines)} file(s) changed:\n  {flist}{extra}")
             self._status_lbl.config(fg=YELLOW)
         else:
-            self._status_var.set("Everything up to date")
+            self._status_var.set("Everything up to date with GitHub")
             self._status_lbl.config(fg=GREEN)
 
-    # ── Core push logic ───────────────────────
+    # ── Pull ──────────────────────────────────
 
-    def _push(self):
+    def _do_pull(self):
         if not self.repo:
-            messagebox.showwarning("No folder", "Please select a project folder first.")
-            return
+            messagebox.showwarning("No repo", "No repo loaded yet."); return
+        self._log("Pulling latest from GitHub...", "dim")
+        r = git(["pull"], self.repo)
+        if r.stdout.strip(): self._log(r.stdout.strip())
+        if r.stderr.strip(): self._log(r.stderr.strip(),
+                                       "dim" if r.returncode == 0 else "err")
+        if r.returncode == 0:
+            self._log("Pull complete.", "ok")
+            self._refresh_status()
+        else:
+            self._log("Pull failed — see above.", "err")
+
+    # ── Commit ────────────────────────────────
+
+    def _do_commit(self):
+        if not self.repo:
+            messagebox.showwarning("No repo", "No repo loaded yet."); return
 
         msg = self._msg.get().strip()
         if not msg:
@@ -210,12 +394,50 @@ class App(tk.Tk):
             self._msg.focus_set()
             return
 
+        self._commit_btn.config(state="disabled", text="Committing...")
+        self.update()
+
+        try:
+            # Stage everything
+            self._log("Staging all files...", "dim")
+            r = git(["add", "."], self.repo)
+            if r.returncode != 0:
+                self._log(r.stderr or "git add failed", "err"); return
+
+            # Check if anything is staged
+            staged = subprocess.run(
+                ["git", "diff", "--cached", "--quiet"],
+                cwd=str(self.repo), shell=False)
+            if staged.returncode == 0:
+                self._log("No changes to commit — everything already committed.", "warn")
+                return
+
+            # Commit
+            self._log(f'Committing: "{msg}"', "dim")
+            r = git(["commit", "-m", msg], self.repo)
+            if r.stdout.strip(): self._log(r.stdout.strip())
+            if r.returncode != 0:
+                self._log(r.stderr or "Commit failed", "err"); return
+
+            self._log("Committed successfully. Now click Push to upload.", "ok")
+            self._msg.delete(0, "end")
+            self._committed = True
+            self._refresh_status()
+
+        finally:
+            self._commit_btn.config(state="normal", text="Commit")
+
+    # ── Push ──────────────────────────────────
+
+    def _do_push(self):
+        if not self.repo:
+            messagebox.showwarning("No repo", "No repo loaded yet."); return
+
         remote_r = git(["remote", "get-url", "origin"], self.repo)
         if remote_r.returncode != 0:
-            messagebox.showerror(
-                "No remote",
+            messagebox.showerror("No remote",
                 "No GitHub remote is set.\n\n"
-                "Run this once in your project folder:\n"
+                "Run this once in a terminal inside your project folder:\n"
                 "  git remote add origin https://github.com/USER/REPO.git")
             return
 
@@ -223,37 +445,14 @@ class App(tk.Tk):
         self.update()
 
         try:
-            # 1. Stage everything
-            self._log("Staging all files...", "dim")
-            r = git(["add", "."], self.repo)
-            if r.returncode != 0:
-                self._log(r.stderr or "git add failed", "err"); return
-
-            # 2. Commit (skip if nothing staged)
-            staged = subprocess.run(
-                ["git", "diff", "--cached", "--quiet"],
-                cwd=str(self.repo), shell=False)
-            if staged.returncode == 0:
-                self._log("Nothing new to commit — pushing existing commits.", "dim")
-            else:
-                self._log(f'Committing: "{msg}"', "dim")
-                r = git(["commit", "-m", msg], self.repo)
-                if r.stdout.strip(): self._log(r.stdout.strip())
-                if r.returncode != 0:
-                    self._log(r.stderr or "Commit failed", "err"); return
-                self._log("Committed.", "ok")
-
-            # 3. Push
+            # Branch (rename master -> main if needed)
             branch_r = git(["branch", "--show-current"], self.repo)
             branch   = branch_r.stdout.strip() or "main"
-
-            # If local branch is 'master', rename it to 'main' to match GitHub default
             if branch == "master":
                 git(["branch", "-M", "main"], self.repo)
                 branch = "main"
 
-            self._log(f"Pushing branch '{branch}' to GitHub...", "dim")
-
+            self._log(f"Pushing '{branch}' to GitHub...", "dim")
             r = git(["push", "--set-upstream", "origin", branch], self.repo)
             if r.stdout.strip(): self._log(r.stdout.strip())
             if r.stderr.strip(): self._log(r.stderr.strip(),
@@ -261,32 +460,44 @@ class App(tk.Tk):
 
             if r.returncode == 0:
                 self._log("All files pushed to GitHub successfully!", "ok")
-                self._msg.delete(0, "end")
+                self._committed = False
                 self._refresh_status()
             else:
                 stderr = r.stderr.lower()
                 if any(k in stderr for k in ("401","403","authentication",
-                                              "credential","permission denied",
-                                              "could not read")):
+                                              "credential","permission denied")):
                     self._log(
-                        "Auth failed — Windows should show a login popup.\n"
-                        "If not, run this once in a terminal:\n"
-                        "  git push\n"
-                        "and sign in when prompted.", "warn")
-                elif "rejected" in stderr:
-                    self._log(
-                        "Push rejected — remote has changes you don't have.\n"
-                        "Run:  git pull  then try again.", "warn")
+                        "Auth failed — a Windows login popup should appear.\n"
+                        "If not, open a terminal and run:  git push", "warn")
+                elif "rejected" in stderr or "fetch first" in stderr:
+                    if messagebox.askyesno(
+                        "GitHub has newer files",
+                        "GitHub has changes your local copy doesn't have.\n\n"
+                        "Overwrite GitHub with your local files?\n\n"
+                        "YES = force push  (your files win)\n"
+                        "NO  = cancel  (use Pull Latest first to merge)",
+                        icon="warning"
+                    ):
+                        self._log("Force pushing...", "warn")
+                        rf = git(["push", "--force", "origin", branch], self.repo)
+                        if rf.stdout.strip(): self._log(rf.stdout.strip())
+                        if rf.stderr.strip(): self._log(rf.stderr.strip(),
+                                               "dim" if rf.returncode == 0 else "err")
+                        if rf.returncode == 0:
+                            self._log("Force push successful!", "ok")
+                            self._committed = False
+                            self._refresh_status()
+                        else:
+                            self._log("Force push failed — see above.", "err")
+                    else:
+                        self._log("Cancelled. Click 'Pull Latest' first, then push again.", "dim")
 
         finally:
             self._push_btn.config(state="normal", text="⬆  Push to GitHub")
 
-    # ── Log helpers ───────────────────────────
+    # ── Log ───────────────────────────────────
 
     def _log(self, text, tag="plain"):
-        self._log_widget_write(text, tag)
-
-    def _log_widget_write(self, text, tag):
         self._log_box.config(state="normal")
         self._log_box.insert("end", text + "\n", tag)
         self._log_box.see("end")
