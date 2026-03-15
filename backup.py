@@ -9,6 +9,7 @@ SELF_NAMES = {
     "bkup_html.py",
     "bkup_python.py",
     "bkup_combined.py",
+    "gitpushui.py",
 }
 
 
@@ -38,10 +39,22 @@ def get_next_backup_number(base_filename):
 
 def detect_available_file_types():
     html_files = sorted(glob.glob("*.html"))
+
+    current_script = ""
+    try:
+        current_script = os.path.basename(__file__).lower()
+    except NameError:
+        pass
+
+    excluded_py_names = {name.lower() for name in SELF_NAMES}
+    if current_script:
+        excluded_py_names.add(current_script)
+
     py_files = sorted(
         f for f in glob.glob("*.py")
-        if os.path.basename(f).lower() not in SELF_NAMES
+        if os.path.basename(f).lower() not in excluded_py_names
     )
+
     return html_files, py_files
 
 

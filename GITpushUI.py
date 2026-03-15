@@ -242,6 +242,14 @@ class App(tk.Tk):
         btn(top, "Pull Latest", self._do_pull,
             SURFACE, BORDER, pady=5).pack(side="right", padx=(0, 4))
 
+        self._auto_exit = tk.BooleanVar(value=True)
+        tk.Checkbutton(top, text="Exit after push",
+                       variable=self._auto_exit,
+                       bg=SURFACE, fg=DIM, selectcolor=BG,
+                       activebackground=SURFACE, activeforeground=FG,
+                       font=("Segoe UI", 9), relief="flat",
+                       cursor="hand2").pack(side="right", padx=(0, 8))
+
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x")
 
         # Repo path
@@ -462,6 +470,8 @@ class App(tk.Tk):
                 self._log("All files pushed to GitHub successfully!", "ok")
                 self._committed = False
                 self._refresh_status()
+                if self._auto_exit.get():
+                    self.after(800, self.destroy)
             else:
                 stderr = r.stderr.lower()
                 if any(k in stderr for k in ("401","403","authentication",
@@ -479,6 +489,8 @@ class App(tk.Tk):
                         self._log("Force push successful!", "ok")
                         self._committed = False
                         self._refresh_status()
+                        if self._auto_exit.get():
+                            self.after(800, self.destroy)
                     else:
                         self._log("Force push failed — see above.", "err")
 
