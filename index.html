@@ -1,7 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><!DOCTYPE html>
-<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -366,7 +364,7 @@ input[type=range]::-moz-range-thumb {
 
 #buy-breakdown-popup.visible { display:block !important; }
 
-
+.disclaimer {
   font-size: 10px; color: var(--faint); line-height: 1.7;
   text-align: center; margin-top: 1.5rem;
 }
@@ -720,10 +718,7 @@ input[type=range]::-moz-range-thumb {
     </div>
   </div>
 
-  <p class="disclaimer">
-    Registration tax rates are indicative. Notary fees vary 0.8–1.5%. Carry-over mortgage (wederopname/reprise) subject to lender approval.<br>
-    Always verify exact figures with a Belgian notary (notaris/notaire).
-  </p>
+
 
 </div>
 
@@ -746,7 +741,7 @@ input[type=range]::-moz-range-thumb {
     document.getElementById('buy-breakdown-popup').classList.remove('visible');
   });
 
- '€' + Math.round(n).toLocaleString('de-DE');
+  const fmt = n => '€' + Math.round(n).toLocaleString('de-DE');
   const fmtN = n => parseFloat(n.toFixed(4)).toLocaleString('de-DE', {maximumFractionDigits: 4});
 
   const regTax   = { flanders_first: 0.03, flanders_other: 0.12, brussels: 0.125, wallonia: 0.125 };
