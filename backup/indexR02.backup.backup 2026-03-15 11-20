@@ -55,14 +55,15 @@ body {
 /* ── Hero strip ── */
 .hero {
   display: grid; grid-template-columns: 1fr auto 1fr auto 1fr;
-  align-items: center; gap: 0;
+  align-items: stretch; gap: 0;
   background: var(--text); border-radius: var(--r);
-  margin-bottom: 10px; overflow: hidden;
+  margin-bottom: 10px;
 }
 
 .hero-cell {
   padding: 16px 20px;
   border-right: 1px solid rgba(255,255,255,0.08);
+  position: relative;
 }
 .hero-cell:last-child { border-right: none; }
 .hero-cell .h-label {
@@ -77,17 +78,24 @@ body {
   font-family: var(--mono); font-size: 22px; font-weight: 600;
   color: #fff; line-height: 1; letter-spacing: -0.01em;
 }
-.hero-cell .h-sub { font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 4px; }
+.hero-cell .h-sub {
+  font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 4px;
+  display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+}
 .hero-cell.invest .h-val { color: #6ee7a8; }
 .hero-cell.invest .h-label .dot { background: #6ee7a8; }
 .hero-cell.sell .h-label .dot { background: rgba(255,255,255,0.4); }
 .hero-cell.buy .h-label .dot { background: #fbbf5e; }
 .hero-cell.buy .h-val { color: #fbbf5e; }
+.hero-cell[onclick] { cursor: pointer; }
+.hero-cell[onclick]:hover { background: rgba(255,255,255,0.04); }
 
 .hero-arrow {
+  display: flex; align-items: center; justify-content: center;
   padding: 0 10px;
-  font-size: 18px; color: rgba(255,255,255,0.2);
+  font-size: 16px; color: rgba(255,255,255,0.18);
   font-family: var(--mono); flex-shrink: 0;
+  border-right: 1px solid rgba(255,255,255,0.08);
 }
 
 /* ── Layout ── */
@@ -211,6 +219,37 @@ input[type=range]::-moz-range-thumb {
 }
 .bk-table tr.carry-row td { background: var(--accent-bg); color: var(--accent); }
 .bk-table tr.carry-row .td-amt { font-family: var(--mono); font-weight: 500; }
+
+/* Editable/hideable cost breakdown rows */
+.bk-row { cursor: pointer; transition: opacity 0.15s; }
+.bk-row:hover td { background: var(--surface2); }
+.bk-row.bk-disabled td { opacity: 0.35; text-decoration: line-through; }
+.bk-row.bk-disabled:hover td { background: transparent; }
+.bk-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 13px; height: 13px; border-radius: 3px; border: 1.5px solid var(--border-strong);
+  flex-shrink: 0; margin-right: 6px; vertical-align: middle;
+  transition: background 0.12s, border-color 0.12s;
+}
+.bk-row:not(.bk-disabled) .bk-toggle { background: var(--accent); border-color: var(--accent); }
+.bk-row:not(.bk-disabled) .bk-toggle::after {
+  content: ''; width: 4px; height: 7px;
+  border: 2px solid #fff; border-top: none; border-left: none;
+  transform: rotate(42deg) translateY(-1px); display: block;
+}
+.bk-input {
+  width: 100%; max-width: 110px; height: 24px; padding: 0 6px;
+  font-size: 12px; font-family: var(--mono);
+  border: 1px solid var(--border); border-radius: 4px;
+  background: var(--bg); color: var(--text); outline: none;
+  text-align: right; -webkit-appearance: none;
+  transition: border-color 0.12s;
+}
+.bk-input:focus { border-color: var(--accent); background: #fff; }
+.bk-row.bk-disabled .bk-input { pointer-events: none; }
+.bk-amt-cell { text-align: right; }
+.bk-computed { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.bk-hint { font-size: 9px; color: var(--faint); margin-top: 1px; }
 
 .section-sep {
   font-size: 9px; font-weight: 600; letter-spacing: 0.1em;
@@ -430,17 +469,15 @@ input[type=range]::-moz-range-thumb {
   .top-bar span { font-size: 10px; }
 
   /* Hero strip: stack vertically */
-  .hero {
-    grid-template-columns: 1fr;
-    border-radius: var(--r);
-  }
+  .hero { grid-template-columns: 1fr; border-radius: var(--r); }
   .hero-arrow { display: none; }
   .hero-cell {
     border-right: none;
     border-bottom: 1px solid rgba(255,255,255,0.08);
     padding: 14px 16px;
   }
-  .hero-cell:last-child { border-bottom: none; }
+  .hero-cell:first-child { border-radius: var(--r) var(--r) 0 0; }
+  .hero-cell:last-child { border-bottom: none; border-radius: 0 0 var(--r) var(--r); }
   .hero-cell .h-val { font-size: 18px; }
 
   /* Tooltip popups: full-width, appear below on mobile */
@@ -578,12 +615,11 @@ input[type=range]::-moz-range-thumb {
       <div class="h-sub">Your current property</div>
     </div>
     <div class="hero-arrow">→</div>
-    <div class="hero-cell buy" id="hero-buy-cell" style="position:relative;cursor:pointer;" onclick="togglePopup('buy-breakdown-popup',event)" onmouseenter="showPopup('buy-breakdown-popup')" onmouseleave="hidePopup('buy-breakdown-popup')">
+    <div class="hero-cell buy" id="hero-buy-cell" onclick="togglePopup('buy-breakdown-popup',event)" onmouseenter="showPopup('buy-breakdown-popup')" onmouseleave="hidePopup('buy-breakdown-popup')">
       <div class="h-label"><span class="dot"></span>Total Belgium cost</div>
       <div class="h-val" id="h-buy">—</div>
-      <div class="h-sub" style="display:flex;align-items:center;gap:5px;">Listed + taxes + fees <span style="font-size:9px;opacity:0.5;border:1px solid rgba(255,255,255,0.25);border-radius:3px;padding:0 4px;letter-spacing:0.05em;">hover</span></div>
-      <!-- breakdown popup -->
-      <div id="buy-breakdown-popup" class="tt-popup" style="pointer-events:none;">
+      <div class="h-sub">Listed + taxes + fees <span style="font-size:9px;opacity:0.5;border:1px solid rgba(255,255,255,0.25);border-radius:3px;padding:0 4px;letter-spacing:0.05em;">hover</span></div>
+      <div id="buy-breakdown-popup" class="tt-popup" style="top:calc(100% + 8px);bottom:auto;left:0;transform:none;pointer-events:none;min-width:260px;">
         <div style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:8px;">Cost breakdown</div>
         <table style="width:100%;border-collapse:collapse;">
           <tr class="bp-row"><td class="bp-label">Listed price</td><td class="bp-amt" id="bp-listed">—</td></tr>
@@ -603,15 +639,15 @@ input[type=range]::-moz-range-thumb {
             <td style="padding:6px 4px 2px;font-size:13px;font-weight:600;color:#fbbf5e;font-family:var(--mono);text-align:right;" id="bp-total">—</td>
           </tr>
         </table>
-        <div class="tt-arrow"></div>
+        <div class="tt-arrow" style="top:-5px;bottom:auto;border-right:none;border-bottom:none;border-left:1px solid rgba(255,255,255,0.12);border-top:1px solid rgba(255,255,255,0.12);"></div>
       </div>
     </div>
     <div class="hero-arrow">→</div>
-    <div class="hero-cell invest" id="hero-invest-cell" style="position:relative;cursor:pointer;" onclick="togglePopup('invest-popup',event)" onmouseenter="showPopup('invest-popup')" onmouseleave="hidePopup('invest-popup')">
+    <div class="hero-cell invest" id="hero-invest-cell" onclick="togglePopup('invest-popup',event)" onmouseenter="showPopup('invest-popup')" onmouseleave="hidePopup('invest-popup')">
       <div class="h-label"><span class="dot"></span>Remaining for investment</div>
       <div class="h-val" id="h-invest">—</div>
-      <div class="h-sub" style="display:flex;align-items:center;gap:5px;">After all costs <span style="font-size:9px;opacity:0.5;border:1px solid rgba(255,255,255,0.25);border-radius:3px;padding:0 4px;letter-spacing:0.05em;">hover</span></div>
-      <div id="invest-popup" class="tt-popup">
+      <div class="h-sub">After all costs <span style="font-size:9px;opacity:0.5;border:1px solid rgba(255,255,255,0.25);border-radius:3px;padding:0 4px;letter-spacing:0.05em;">hover</span></div>
+      <div id="invest-popup" class="tt-popup" style="top:calc(100% + 8px);bottom:auto;right:0;left:auto;transform:none;min-width:220px;">
         <div class="tt-title">How it's calculated</div>
         <table style="width:100%;border-collapse:collapse;">
           <tr class="bp-row"><td class="bp-label">Selling price</td><td class="bp-amt" id="ip-sell">—</td></tr>
@@ -622,7 +658,7 @@ input[type=range]::-moz-range-thumb {
             <td style="padding:6px 4px 2px;font-size:13px;font-weight:600;color:#6ee7a8;font-family:var(--mono);text-align:right;" id="ip-remain">—</td>
           </tr>
         </table>
-        <div class="tt-arrow"></div>
+        <div class="tt-arrow" style="top:-5px;bottom:auto;left:75%;border-right:none;border-bottom:none;border-left:1px solid rgba(255,255,255,0.12);border-top:1px solid rgba(255,255,255,0.12);"></div>
       </div>
     </div>
   </div>
@@ -836,31 +872,40 @@ input[type=range]::-moz-range-thumb {
 
         </div>
 
-        <div class="monthly-strip" id="monthly-box">
+        <div class="monthly-strip" id="monthly-box" style="position:relative;cursor:pointer;" onclick="togglePopup('monthly-detail-popup',event)" onmouseenter="showPopup('monthly-detail-popup')" onmouseleave="hidePopup('monthly-detail-popup')">
           <div>
-            <p class="ms-label">Monthly payment</p>
+            <p class="ms-label">Monthly payment <span style="font-size:9px;opacity:0.45;border:1px solid rgba(255,255,255,0.25);border-radius:3px;padding:0 4px;letter-spacing:0.04em;margin-left:4px;font-family:var(--sans);font-weight:400;text-transform:none;">hover</span></p>
             <p class="ms-sub" id="monthly-sub">—</p>
           </div>
           <p class="ms-val" id="monthly">—</p>
+          <div id="monthly-detail-popup" class="tt-popup" style="bottom:calc(100% + 8px);top:auto;left:0;right:auto;transform:none;min-width:240px;pointer-events:none;">
+            <div class="tt-title">Payment breakdown</div>
+            <table style="width:100%;border-collapse:collapse;">
+              <tr class="bp-row" id="mp-carry-row">
+                <td class="bp-label">Carry-over (<span id="mp-carry-amt">—</span>)</td>
+                <td class="bp-amt" id="mp-carry-payment">—</td>
+              </tr>
+              <tr class="bp-row" id="mp-new-row">
+                <td class="bp-label">New loan (<span id="mp-new-amt">—</span>)</td>
+                <td class="bp-amt" id="mp-new-payment">—</td>
+              </tr>
+              <tr style="border-top:1px solid rgba(255,255,255,0.1);">
+                <td style="padding:6px 4px 2px;font-size:11px;font-weight:600;color:#fff;font-family:var(--mono);">= Total / mo</td>
+                <td style="padding:6px 4px 2px;font-size:13px;font-weight:600;color:#fff;font-family:var(--mono);text-align:right;" id="mp-total">—</td>
+              </tr>
+            </table>
+            <div class="tt-arrow"></div>
+          </div>
         </div>
       </div>
 
       <div class="card">
-        <p class="card-title">Cost breakdown</p>
-        <table class="bk-table">
-          <tr><td class="td-label">Listed price</td><td class="td-amt" id="b-listed">—</td></tr>
-          <tr><td class="td-label">Registration tax <span class="td-tag" id="b-rate-tag">—</span></td><td class="td-amt" id="b-reg">—</td></tr>
-          <tr><td class="td-label">Notary fees (<span id="b-notary-pct">1.5</span>%)</td><td class="td-amt" id="b-notary">—</td></tr>
-          <tr><td class="td-label">Hypotheekadvies (mortgage advice)</td><td class="td-amt" id="b-advice">—</td></tr>
-          <tr><td class="td-label">Admin &amp; misc.</td><td class="td-amt" id="b-admin">—</td></tr>
-          <tr><td class="td-label">Renovation budget</td><td class="td-amt">€20,000</td></tr>
-          <tr><td class="td-label">Hypotheekakte notaris (mortgage deed)</td><td class="td-amt" id="b-deed">—</td></tr>
-          <tr><td class="td-label">Bankdossierkosten (bank file fee)</td><td class="td-amt" id="b-bank">—</td></tr>
-          <tr><td class="td-label">Schuldsaldoverzekering (life insurance)</td><td class="td-amt" id="b-ssv">—</td></tr>
-          <tr><td class="td-label">Brandverzekering jaar 1 (fire insurance yr 1)</td><td class="td-amt" id="b-fire">—</td></tr>
-          <tr><td class="td-label">Bouwkundige keuring (structural inspection)</td><td class="td-amt" id="b-inspect">—</td></tr>
-          <tr><td class="td-label">Verhuiskosten (moving costs)</td><td class="td-amt" id="b-moving">—</td></tr>
-          <tr class="total"><td>Total acquisition</td><td class="td-amt" id="b-total-row">—</td></tr>
+        <p class="card-title">Cost breakdown <span style="font-size:9px;color:var(--faint);font-weight:400;letter-spacing:0;text-transform:none;">· click row to hide · edit amounts inline</span></p>
+        <table class="bk-table" id="bk-acq-table">
+          <tbody id="bk-acq-tbody"></tbody>
+          <tfoot>
+            <tr class="total"><td>Total acquisition</td><td class="td-amt" id="b-total-row">—</td></tr>
+          </tfoot>
         </table>
 
         <span class="section-sep">Financing</span>
@@ -876,7 +921,7 @@ input[type=range]::-moz-range-thumb {
             <td class="td-amt" id="f-remainder">—</td>
           </tr>
           <tr class="total">
-            <td>New mortgage needed <span id="new-loan-badge"></span></td>
+            <td>New loan amount <span id="new-loan-badge"></span></td>
             <td class="td-amt" id="f-loan">—</td>
           </tr>
         </table>
@@ -1163,6 +1208,76 @@ input[type=range]::-moz-range-thumb {
   function hideBuyBreakdown() { hidePopup('buy-breakdown-popup'); }
   function toggleBuyBreakdown(e) { togglePopup('buy-breakdown-popup', e); }
 
+  // ── Cost Breakdown table ──
+  // fromCalc rows are updated by calc(); manual rows have editable inputs.
+  const BK_ROWS = [
+    { id:'bk-listed',  label:'Listed price',                                     hint:'',                           fromCalc:true,  enabled:true },
+    { id:'bk-reg',     label:'Registration tax',                                  hint:'',    tag:true,              fromCalc:true,  enabled:true },
+    { id:'bk-notary',  label:'Notary fees',                                       hint:'',    pct:true,              fromCalc:true,  enabled:true },
+    { id:'bk-advice',  label:'Hypotheekadvies (mortgage advice)',                 hint:'broker/advisor fee',         fromCalc:true,  enabled:true },
+    { id:'bk-admin',   label:'Admin &amp; misc.',                                  hint:'worst case €3,000',          fromCalc:true,  enabled:true },
+    { id:'bk-reno',    label:'Renovation budget',                                  hint:'editable estimate',          fromCalc:false, amount:20000, enabled:true },
+    { id:'bk-deed',    label:'Hypotheekakte notaris (mortgage deed)',              hint:'',                           fromCalc:true,  enabled:true },
+    { id:'bk-bank',    label:'Bankdossierkosten (bank file fee)',                  hint:'',                           fromCalc:true,  enabled:true },
+    { id:'bk-ssv',     label:'Schuldsaldoverzekering (life insurance)',            hint:'lump sum',                   fromCalc:true,  enabled:true },
+    { id:'bk-fire',    label:'Brandverzekering jaar 1 (fire insurance yr 1)',      hint:'',                           fromCalc:true,  enabled:true },
+    { id:'bk-inspect', label:'Bouwkundige keuring (structural inspection)',        hint:'',                           fromCalc:true,  enabled:true },
+    { id:'bk-moving',  label:'Verhuiskosten (moving costs)',                      hint:'NL→BE',                      fromCalc:true,  enabled:true },
+  ];
+
+  function buildBkTable() {
+    const tbody = document.getElementById('bk-acq-tbody');
+    tbody.innerHTML = '';
+    BK_ROWS.forEach(row => {
+      const tr = document.createElement('tr');
+      tr.className = 'bk-row' + (row.enabled ? '' : ' bk-disabled');
+      tr.id = 'bktr-' + row.id;
+      let labelHtml = `<span class="bk-toggle"></span>${row.label}`;
+      if (row.tag)  labelHtml += ` <span class="td-tag" id="${row.id}-tag">—</span>`;
+      if (row.pct)  labelHtml += ` (<span id="${row.id}-pct">1.5</span>%)`;
+      if (row.hint) labelHtml += `<div class="bk-hint">${row.hint}</div>`;
+      tr.innerHTML = `
+        <td class="td-label" style="vertical-align:middle;">${labelHtml}</td>
+        <td class="bk-amt-cell">
+          ${row.fromCalc
+            ? `<span class="bk-computed" id="${row.id}">—</span>`
+            : `<span style="color:var(--faint);font-family:var(--mono);font-size:11px;margin-right:2px;">€</span><input type="number" class="bk-input" id="${row.id}" value="${row.amount}" min="0" step="100">`
+          }
+        </td>`;
+      tr.addEventListener('click', function(e) {
+        if (e.target.tagName === 'INPUT') return;
+        row.enabled = !row.enabled;
+        tr.classList.toggle('bk-disabled', !row.enabled);
+        recalcBkTotal();
+      });
+      if (!row.fromCalc) {
+        tr.querySelector('input').addEventListener('input', () => { recalcBkTotal(); calc(); });
+        tr.querySelector('input').addEventListener('click', e => e.stopPropagation());
+      }
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Returns the acquisition total respecting enabled/disabled rows + manual overrides
+  function getAcqTotal() {
+    let total = 0;
+    BK_ROWS.forEach(row => {
+      if (!row.enabled) return;
+      if (row.fromCalc) {
+        total += row._calcValue || 0;
+      } else {
+        const el = document.getElementById(row.id);
+        total += el ? (parseFloat(el.value) || 0) : 0;
+      }
+    });
+    return total;
+  }
+
+  function recalcBkTotal() {
+    const total = getAcqTotal();
+    document.getElementById('b-total-row').textContent = '€' + Math.round(total).toLocaleString('de-DE');
+  }
+
   // ── Monthly cost table ──
   const MONTHLY_ROWS = [
     // { id, category, catColor, item, sub, amount, enabled }
@@ -1186,8 +1301,8 @@ input[type=range]::-moz-range-thumb {
     { id:'mc-clothing', category:'Personal',   catColor:'#4a4a8a', item:'Clothing & shoes',                  sub:'family of 4',                        amount:150,  enabled:true  },
     { id:'mc-personal', category:'Personal',   catColor:'#4a4a8a', item:'Personal care & hygiene',           sub:'toiletries, haircuts, etc.',          amount:80,   enabled:true  },
     { id:'mc-leisure',  category:'Leisure',    catColor:'#1a7a5e', item:'Entertainment & leisure',           sub:'cinema, outings, subscriptions',     amount:150,  enabled:true  },
-    { id:'mc-holidays', category:'Leisure',    catColor:'#1a7a5e', item:'Holidays (annual ÷ 12)',            sub:'€3,600/yr averaged monthly',         amount:300,  enabled:true  },
-    { id:'mc-savings',  category:'Savings',    catColor:'#555',    item:'Monthly savings / buffer',          sub:'emergency fund, goals',              amount:400,  enabled:true  },
+    { id:'mc-holidays', category:'Leisure',    catColor:'#1a7a5e', item:'Holidays (annual ÷ 12)',            sub:'€3,600/yr averaged monthly',         amount:300,  enabled:false },
+    { id:'mc-savings',  category:'Savings',    catColor:'#555',    item:'Monthly savings / buffer',          sub:'emergency fund, goals',              amount:400,  enabled:false },
   ];
 
   function buildMonthlyTable() {
@@ -1298,13 +1413,47 @@ input[type=range]::-moz-range-thumb {
     const fireInsurance = parseFloat(document.getElementById('fireInsurance').value) || 0;
     const inspection    = parseFloat(document.getElementById('inspection').value) || 0;
     const moving        = parseFloat(document.getElementById('moving').value) || 0;
-    const belgTotal     = listed + regAmount + notary + adviceFee + adminMisc + mortgageDeed + bankFee + ssv + fireInsurance + inspection + moving + 20000;
+
+    // Feed computed values into BK_ROWS
+    const bkCalcMap = {
+      'bk-listed':  listed,
+      'bk-reg':     listed * taxRate,
+      'bk-notary':  notary,
+      'bk-advice':  adviceFee,
+      'bk-admin':   adminMisc,
+      'bk-deed':    mortgageDeed,
+      'bk-bank':    bankFee,
+      'bk-ssv':     ssv,
+      'bk-fire':    fireInsurance,
+      'bk-inspect': inspection,
+      'bk-moving':  moving,
+    };
+    BK_ROWS.forEach(row => {
+      if (row.fromCalc && bkCalcMap[row.id] !== undefined) {
+        row._calcValue = bkCalcMap[row.id];
+        const el = document.getElementById(row.id);
+        if (el) el.textContent = '€' + Math.round(row._calcValue).toLocaleString('de-DE');
+      }
+    });
+    // Update tag & pct labels
+    const regTagEl = document.getElementById('bk-reg-tag');
+    if (regTagEl) regTagEl.textContent = regLabel[region];
+    const notaryPctEl = document.getElementById('bk-notary-pct');
+    if (notaryPctEl) notaryPctEl.textContent = (notaryPct * 100).toFixed(1);
+
+    const belgTotal = getAcqTotal();
+    recalcBkTotal();
 
     const equity        = sell - mortgage;
-    const cashAvailable = carryOver ? sell : equity;
-    const cashLeft      = cashAvailable - belgTotal;
-    const newLoan       = carryOver ? Math.max(0, belgTotal - sell) : Math.max(0, belgTotal - equity);
-    const totalBorrow   = carryOver ? mortgage + newLoan : newLoan;
+    const carriedAmount = carryOver ? Math.min(mortgage, belgTotal) : 0;
+    // When carrying over: new loan covers the gap between belgTotal and carry-over.
+    // Equity from the sale stays as free cash — it does NOT reduce the new loan.
+    // Without carry-over: one new mortgage for the full belgTotal, minus equity down payment.
+    const newLoan       = carryOver
+      ? Math.max(0, belgTotal - carriedAmount)
+      : Math.max(0, belgTotal - equity);
+    const totalBorrow   = carriedAmount + newLoan;
+    const cashLeft      = carryOver ? equity : equity - belgTotal;
 
     cashBalance = Math.max(0, cashLeft);
 
@@ -1329,9 +1478,9 @@ input[type=range]::-moz-range-thumb {
     document.getElementById('ip-belgcost').textContent = fmt(belgTotal);
     document.getElementById('ip-remain').textContent   = fmt(cashBalance);
     const ipCarryRow = document.getElementById('ip-carry-row');
-    if (carryOver) {
+    if (carryOver && carriedAmount > 0) {
       ipCarryRow.style.display = 'table-row';
-      document.getElementById('ip-carry').textContent = fmt(mortgage);
+      document.getElementById('ip-carry').textContent = fmt(carriedAmount);
     } else {
       ipCarryRow.style.display = 'none';
     }
@@ -1360,9 +1509,9 @@ input[type=range]::-moz-range-thumb {
     document.getElementById('cl-belgcost').textContent = fmt(belgTotal);
     document.getElementById('cl-result').textContent   = fmt(cashLeft);
     const clCarryRow = document.getElementById('cl-carry-row');
-    if (carryOver) {
+    if (carryOver && carriedAmount > 0) {
       clCarryRow.style.display = 'table-row';
-      document.getElementById('cl-carry').textContent = fmt(mortgage);
+      document.getElementById('cl-carry').textContent = fmt(carriedAmount);
     } else {
       clCarryRow.style.display = 'none';
     }
@@ -1386,58 +1535,67 @@ input[type=range]::-moz-range-thumb {
     bCard.querySelector('.m-val').textContent = fmt(cashLeft);
     bCard.className = 'metric ' + (cashLeft >= 0 ? 'pos' : 'neg');
 
-    // Breakdown
-    document.getElementById('b-listed').textContent      = fmt(listed);
-    document.getElementById('b-reg').textContent         = fmt(regAmount);
-    document.getElementById('b-notary-pct').textContent  = (notaryPct * 100).toFixed(1);
-    document.getElementById('b-notary').textContent      = fmt(notary);
-    document.getElementById('b-advice').textContent      = fmt(adviceFee);
-    document.getElementById('b-admin').textContent       = fmt(adminMisc);
-    document.getElementById('b-deed').textContent        = fmt(mortgageDeed);
-    document.getElementById('b-bank').textContent        = fmt(bankFee);
-    document.getElementById('b-ssv').textContent         = fmt(ssv);
-    document.getElementById('b-fire').textContent        = fmt(fireInsurance);
-    document.getElementById('b-inspect').textContent     = fmt(inspection);
-    document.getElementById('b-moving').textContent      = fmt(moving);
-    document.getElementById('b-rate-tag').textContent    = regLabel[region];
-    document.getElementById('b-total-row').textContent = fmt(belgTotal);
+    document.getElementById('b-rate-tag') && (document.getElementById('b-rate-tag').textContent = regLabel[region]);
     document.getElementById('f-total').textContent     = fmt(belgTotal);
-    document.getElementById('f-equity').textContent    = '− ' + fmt(Math.max(0, cashAvailable));
+    // When carry-over: equity (sale proceeds minus old mortgage) shown as available cash
+    document.getElementById('f-equity').textContent    = '− ' + fmt(Math.max(0, equity));
 
     document.getElementById('f-carry-row').style.display = carryOver ? 'table-row' : 'none';
-    document.getElementById('f-carry-amt').textContent   = '+ ' + fmt(mortgage);
+    document.getElementById('f-carry-amt').textContent   = '+ ' + fmt(carriedAmount);
 
+    // Remainder row: only relevant without carry-over to show equity offset
     const remainderRow = document.getElementById('f-remainder-row');
-    if (carryOver) {
-      const remainderCovered = Math.max(0, Math.min(sell - mortgage, belgTotal - mortgage));
-      remainderRow.style.display = 'table-row';
-      document.getElementById('f-remainder').textContent = '− ' + fmt(remainderCovered);
-    } else {
-      remainderRow.style.display = 'none';
-    }
+    remainderRow.style.display = 'none';
 
     const badge = document.getElementById('new-loan-badge');
     if (carryOver && newLoan === 0) badge.innerHTML = '<span class="badge">fully covered</span>';
-    else if (carryOver) badge.innerHTML = '<span class="badge warn">top-up only</span>';
+    else if (carryOver) badge.innerHTML = '<span class="badge warn">+ new loan</span>';
     else badge.innerHTML = '';
     document.getElementById('f-loan').textContent = totalBorrow > 0 ? fmt(totalBorrow) : '€0';
 
     let monthly = 0;
+    let monthlyCarry = 0;
+    let monthlyNew = 0;
     if (totalBorrow > 0 && rate > 0) {
       const r = rate / 100 / 12, n = term * 12;
-      monthly = totalBorrow * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+      const factor = r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+      monthly = totalBorrow * factor;
+      monthlyCarry = carriedAmount * factor;
+      monthlyNew   = newLoan * factor;
     }
     syncMortgageToMonthly(monthly);
+
+    // Sync monthly breakdown tooltip
+    const mpCarryRow = document.getElementById('mp-carry-row');
+    const mpNewRow   = document.getElementById('mp-new-row');
+    if (carryOver && carriedAmount > 0) {
+      mpCarryRow.style.display = 'table-row';
+      document.getElementById('mp-carry-amt').textContent     = fmt(carriedAmount);
+      document.getElementById('mp-carry-payment').textContent = fmt(monthlyCarry) + '/mo';
+    } else {
+      mpCarryRow.style.display = 'none';
+    }
+    if (newLoan > 0) {
+      mpNewRow.style.display = 'table-row';
+      document.getElementById('mp-new-amt').textContent     = fmt(newLoan);
+      document.getElementById('mp-new-payment').textContent = fmt(monthlyNew) + '/mo';
+    } else {
+      mpNewRow.style.display = 'none';
+    }
+    document.getElementById('mp-total').textContent = monthly > 0 ? fmt(monthly) + '/mo' : '€0/mo';
+
     const mbox = document.getElementById('monthly-box');
     if (totalBorrow === 0) {
       mbox.className = 'monthly-strip free';
+      mbox.style.cursor = 'default';
       document.getElementById('monthly').textContent     = '€0 / mo';
       document.getElementById('monthly-sub').textContent = 'No new mortgage — fully covered by sale proceeds';
     } else {
       mbox.className = 'monthly-strip';
+      mbox.style.cursor = 'pointer';
       document.getElementById('monthly').textContent     = fmt(monthly) + ' / mo';
       const loanDesc = carryOver
-        ? fmt(mortgage) + ' carry-over' + (newLoan > 0 ? ' + ' + fmt(newLoan) + ' top-up' : '')
+        ? fmt(carriedAmount) + ' carry-over' + (newLoan > 0 ? ' + ' + fmt(newLoan) + ' top-up' : '')
         : fmt(newLoan) + ' new loan';
       document.getElementById('monthly-sub').textContent = rate.toFixed(1) + '% · ' + term + ' yrs · ' + loanDesc;
     }
@@ -1594,6 +1752,7 @@ input[type=range]::-moz-range-thumb {
   document.getElementById('tslaGrowth').addEventListener('input', calcInvest);
   document.getElementById('horizonYears').addEventListener('input', calcInvest);
 
+  buildBkTable();
   buildMonthlyTable();
   calc();
 </script>

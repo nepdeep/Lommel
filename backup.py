@@ -201,8 +201,8 @@ class BackupGUI(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Backup Manager")
-        self.geometry("980x680")
-        self.minsize(860, 600)
+        self.geometry("980x760")
+        self.minsize(860, 680)
         self.configure(bg="#f4f6f8")
 
         self.manager = BackupManager()
@@ -219,6 +219,14 @@ class BackupGUI(tk.Tk):
         self._setup_style()
         self._build_ui()
         self.refresh_all()
+        self.bind_all("<Control-b>", lambda event: self.backup_selected_and_close())
+        self.bind_all("<Control-h>", lambda event: self._set_type_filter("html"))
+        self.bind_all("<Control-p>", lambda event: self._set_type_filter("py"))
+        self.bind_all("<Control-x>", lambda event: self.destroy())
+        def _focus_and_select():
+            self.description_entry.focus_set()
+            self.description_entry.select_range(0, "end")
+        self.after(100, _focus_and_select)
 
     def _setup_style(self):
         style = ttk.Style(self)
@@ -262,6 +270,8 @@ class BackupGUI(tk.Tk):
         style.map("Accent.TButton", background=[("active", accent_hover)])
         style.configure("Secondary.TButton", font=("Segoe UI", 10), background=soft, padding=(12, 8))
         style.map("Secondary.TButton", background=[("active", "#e3e9ef")])
+        style.configure("Danger.TButton", font=("Segoe UI Semibold", 10), foreground="white", background="#c0392b", borderwidth=0, padding=(12, 9))
+        style.map("Danger.TButton", background=[("active", "#e74c3c")])
 
         style.configure("TLabelframe", background=card, bordercolor=border, relief="solid")
         style.configure("TLabelframe.Label", background=card, foreground=text, font=("Segoe UI Semibold", 10))
@@ -370,7 +380,8 @@ class BackupGUI(tk.Tk):
         desc.grid(row=2, column=0, sticky="new", pady=(0, 12))
         desc.columnconfigure(1, weight=1)
         ttk.Label(desc, text="Backup label", background=self.colors["card"], foreground=self.colors["text"], font=("Segoe UI Semibold", 10)).grid(row=0, column=0, sticky="w")
-        ttk.Entry(desc, textvariable=self.description_var).grid(row=0, column=1, sticky="ew", padx=(10, 10))
+        self.description_entry = ttk.Entry(desc, textvariable=self.description_var)
+        self.description_entry.grid(row=0, column=1, sticky="ew", padx=(10, 10))
         ttk.Button(desc, text="Use Time", style="Secondary.TButton", command=self.set_timestamp_description).grid(row=0, column=2, padx=(0, 8))
         ttk.Button(desc, text="Clear", style="Secondary.TButton", command=lambda: self.description_var.set("")).grid(row=0, column=3)
 
@@ -402,6 +413,8 @@ class BackupGUI(tk.Tk):
         backup_actions.grid(row=4, column=0, sticky="ew", pady=(12, 0))
         ttk.Button(backup_actions, text="Backup Selected", style="Accent.TButton", command=self.backup_selected_file).grid(row=0, column=0, sticky="w")
         ttk.Button(backup_actions, text="Backup All Listed", style="Secondary.TButton", command=self.backup_all_visible).grid(row=0, column=1, sticky="w", padx=(10, 0))
+        ttk.Button(backup_actions, text="Backup Selected & Close", style="Danger.TButton", command=self.backup_selected_and_close).grid(row=0, column=2, sticky="w", padx=(10, 0))
+        ttk.Button(backup_actions, text="Close", style="Danger.TButton", command=self.destroy).grid(row=0, column=3, sticky="w", padx=(10, 0))
 
     def _build_restore_tab(self):
         self.restore_tab.columnconfigure(0, weight=1)
@@ -452,6 +465,10 @@ class BackupGUI(tk.Tk):
     def set_status(self, text):
         self.status_var.set(text)
         self.update_idletasks()
+
+    def _set_type_filter(self, file_type):
+        self.selected_type.set(file_type)
+        self.refresh_all()
 
 
     def apply_folder_from_entry(self):
@@ -533,6 +550,11 @@ class BackupGUI(tk.Tk):
             row = self.backup_tree.insert("", "end", values=(filetype, filename, next_rev))
             self.backup_file_map[row] = filename
 
+        if len(files) == 1:
+            only_row = self.backup_tree.get_children()[0]
+            self.backup_tree.selection_set(only_row)
+            self.backup_tree.focus(only_row)
+
     def refresh_restore_list(self):
         for item in self.restore_tree.get_children():
             self.restore_tree.delete(item)
@@ -591,6 +613,20 @@ class BackupGUI(tk.Tk):
             self.select_restore_by_filename(result["filename"])
             self.notebook.select(self.restore_tab)
             self.set_status(f"Created {result['filename']}")
+        except Exception as exc:
+            messagebox.showerror("Backup failed", str(exc))
+
+    def backup_selected_and_close(self):
+        filename = self.get_selected_backup_source()
+        if not filename:
+            messagebox.showinfo("Select file", "Select a file from the Backup tab first.")
+            return
+
+        description = self.description_var.get().strip() or self.default_description()
+        try:
+            result = self.manager.create_backup(filename, description)
+            self.set_status(f"Created {result['filename']}")
+            self.destroy()
         except Exception as exc:
             messagebox.showerror("Backup failed", str(exc))
 
