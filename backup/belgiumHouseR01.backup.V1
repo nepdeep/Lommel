@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Belgium House Purchase Budget</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f7f6f2;
+    --surface: #ffffff;
+    --surface2: #f0ede6;
+    --border: #e2ddd4;
+    --border-strong: #ccc7bc;
+    --text: #1a1916;
+    --text-muted: #6b6860;
+    --text-faint: #9e9b94;
+    --accent: #2a5c45;
+    --accent-light: #e8f2ed;
+    --accent-text: #1e4433;
+    --danger: #c0392b;
+    --success: #1e6641;
+    --success-light: #e8f5ee;
+    --warning: #8a5e00;
+    --warning-light: #fff8e6;
+    --btc: #f7931a;
+    --btc-light: #fff4e6;
+    --tsla: #cc0000;
+    --tsla-light: #fff0f0;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 1.5rem 1rem 4rem;
+  }
+
+  .page-wrap { max-width: 1100px; margin: 0 auto; }
+
+  header { margin-bottom: 1.25rem; }
+  header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.55rem; font-weight: 400;
+    color: var(--text); line-height: 1.2;
+  }
+  header p { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px; align-items: start;
+  }
+
+  .col { display: flex; flex-direction: column; gap: 14px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+  }
+
+  .card-title {
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text-faint); margin-bottom: 1rem;
+  }
+
+  .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 11px; color: var(--text-muted); }
+
+  .field input[type=number], .field select {
+    height: 38px; padding: 0 10px; font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--bg); color: var(--text);
+    outline: none; width: 100%; transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+
+  .field input[type=number]:focus, .field select:focus {
+    border-color: var(--accent); background: var(--surface);
+  }
+
+  .field select {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6860' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px;
+  }
+
+  .slider-block { margin-top: 1rem; }
+  .slider-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .slider-header label { font-size: 11px; color: var(--text-muted); }
+  .slider-header .val { font-size: 15px; font-weight: 500; color: var(--text); }
+
+  input[type=range] {
+    -webkit-appearance: none; width: 100%; height: 4px;
+    border-radius: 2px; background: var(--border); outline: none; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent); border: 2px solid var(--surface);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15); cursor: pointer; transition: transform 0.1s;
+  }
+  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+  input[type=range]::-moz-range-thumb {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent); border: 2px solid var(--surface); cursor: pointer;
+  }
+
+  .ticks { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-faint); margin-top: 4px; }
+
+  .carry-over-box {
+    margin-top: 1rem; background: var(--accent-light);
+    border: 1px solid #b8d8c8; border-radius: var(--radius);
+    padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .carry-over-row { display: flex; align-items: center; gap: 9px; }
+  .carry-over-row input[type=checkbox] {
+    -webkit-appearance: none; width: 17px; height: 17px;
+    border: 1.5px solid var(--accent); border-radius: 4px;
+    background: var(--surface); cursor: pointer; flex-shrink: 0;
+    position: relative; transition: background 0.15s;
+  }
+  .carry-over-row input[type=checkbox]:checked { background: var(--accent); }
+  .carry-over-row input[type=checkbox]:checked::after {
+    content: ''; position: absolute; left: 3px; top: 1px;
+    width: 6px; height: 9px; border: 2px solid #fff;
+    border-top: none; border-left: none; transform: rotate(42deg);
+  }
+  .carry-over-row label { font-size: 12px; color: var(--accent-text); font-weight: 500; cursor: pointer; line-height: 1.3; }
+  .carry-over-detail { font-size: 11px; color: var(--accent-text); opacity: 0.75; padding-left: 26px; line-height: 1.5; }
+  .carry-over-amount { padding-left: 26px; display: flex; align-items: baseline; gap: 6px; }
+  .carry-over-amount .co-label { font-size: 11px; color: var(--accent-text); }
+  .carry-over-amount .co-amt { font-size: 15px; font-weight: 500; color: var(--accent-text); }
+
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+
+  .metric {
+    background: var(--surface2); border-radius: var(--radius);
+    padding: 12px 14px; border: 1px solid var(--border);
+  }
+  .metric .m-label { font-size: 10px; color: var(--text-muted); margin-bottom: 6px; line-height: 1.3; }
+  .metric .m-value { font-size: 17px; font-weight: 500; line-height: 1.1; color: var(--text); }
+  .metric .m-sub { font-size: 10px; color: var(--text-faint); margin-top: 3px; }
+  .metric.pos .m-value { color: var(--success); }
+  .metric.neg .m-value { color: var(--danger); }
+  .metric.featured { background: var(--surface); border-color: var(--border-strong); grid-column: 1 / -1; }
+
+  .breakdown { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 10px; }
+  .br-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 12px; font-size: 12px; border-bottom: 1px solid var(--border);
+  }
+  .br-row:last-child { border-bottom: none; }
+  .br-row.total { font-weight: 500; background: var(--surface2); font-size: 13px; }
+  .br-row .desc { color: var(--text-muted); }
+  .br-row .amt { font-variant-numeric: tabular-nums; color: var(--text); }
+  .br-row .tag {
+    display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 3px;
+    background: var(--accent-light); color: var(--accent-text); margin-left: 5px; font-weight: 500;
+  }
+  .br-row.carry { background: var(--accent-light); }
+  .br-row.carry .desc { color: var(--accent-text); }
+  .br-row.carry .amt { color: var(--accent-text); font-weight: 500; }
+
+  .monthly-box {
+    background: var(--text); border-radius: var(--radius);
+    padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between;
+  }
+  .monthly-box .ml { color: rgba(255,255,255,0.6); font-size: 12px; }
+  .monthly-box .ms { color: rgba(255,255,255,0.4); font-size: 10px; margin-top: 3px; max-width: 160px; line-height: 1.4; }
+  .monthly-box .mv { font-size: 22px; font-weight: 500; color: #fff; white-space: nowrap; }
+  .monthly-box.no-loan { background: var(--success-light); border: 1px solid #a8d8b8; }
+  .monthly-box.no-loan .ml { color: var(--success); }
+  .monthly-box.no-loan .ms { color: #5a9e7a; max-width: 180px; }
+  .monthly-box.no-loan .mv { color: var(--success); }
+
+  .badge {
+    display: inline-block; font-size: 10px; font-weight: 500;
+    padding: 1px 6px; border-radius: 20px;
+    background: var(--warning-light); color: var(--warning); margin-left: 4px; vertical-align: middle;
+  }
+  .badge.green { background: var(--success-light); color: var(--success); }
+
+  /* Invest CTA button */
+  .invest-cta-wrap {
+    margin-top: 1.5rem;
+    text-align: center;
+  }
+
+  .invest-cta {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--text); color: #fff;
+    border: none; border-radius: var(--radius);
+    padding: 12px 28px; font-size: 14px; font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+    text-decoration: none;
+  }
+  .invest-cta:hover { opacity: 0.85; }
+  .invest-cta:active { transform: scale(0.98); }
+  .invest-cta .arrow { font-size: 16px; transition: transform 0.2s; }
+  .invest-cta:hover .arrow { transform: translateY(4px); }
+
+  /* ─── Investment section ─── */
+  #invest-section {
+    margin-top: 2.5rem;
+    scroll-margin-top: 1.5rem;
+  }
+
+  .invest-header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 1.25rem; flex-wrap: wrap; gap: 8px;
+  }
+
+  .invest-header h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.25rem; font-weight: 400;
+  }
+
+  .invest-header .cash-pill {
+    font-size: 13px; color: var(--text-muted);
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 4px 14px;
+  }
+
+  .invest-header .cash-pill strong { color: var(--success); font-weight: 500; }
+
+  /* Asset purchase cards */
+  .asset-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 1.25rem;
+  }
+
+  .asset-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.25rem;
+  }
+
+  .asset-card.btc { border-top: 3px solid var(--btc); }
+  .asset-card.tsla { border-top: 3px solid var(--tsla); }
+
+  .asset-icon {
+    font-size: 11px; font-weight: 500; letter-spacing: 0.08em;
+    text-transform: uppercase; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .asset-icon .dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+
+  .asset-icon .dot.btc-dot { background: var(--btc); }
+  .asset-icon .dot.tsla-dot { background: var(--tsla); }
+
+  .asset-price-row {
+    display: flex; align-items: baseline; gap: 6px; margin-bottom: 14px;
+  }
+
+  .asset-price-row label { font-size: 11px; color: var(--text-muted); }
+  .asset-price-input {
+    height: 34px; padding: 0 10px; font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--bg); color: var(--text); outline: none; width: 130px;
+    transition: border-color 0.15s; -webkit-appearance: none;
+  }
+  .asset-price-input:focus { border-color: var(--accent); background: var(--surface); }
+
+  .asset-stat {
+    background: var(--surface2); border-radius: var(--radius);
+    padding: 10px 14px; margin-bottom: 8px;
+  }
+  .asset-stat .as-label { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
+  .asset-stat .as-value { font-size: 20px; font-weight: 500; }
+  .asset-stat .as-sub { font-size: 10px; color: var(--text-faint); margin-top: 2px; }
+  .as-value.btc-col { color: var(--btc); }
+  .as-value.tsla-col { color: var(--tsla); }
+
+  .asset-proj {
+    background: var(--surface2); border-radius: var(--radius); padding: 10px 14px;
+  }
+  .asset-proj .ap-label { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
+  .asset-proj .ap-value { font-size: 16px; font-weight: 500; color: var(--success); }
+  .asset-proj .ap-gain { font-size: 10px; color: var(--text-faint); margin-top: 2px; }
+
+  .asset-growth-slider {
+    margin: 8px 0;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 12px;
+  }
+
+  /* Growth chart card */
+  .chart-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .chart-controls {
+    display: flex; align-items: center; gap: 1.5rem;
+    flex-wrap: wrap; margin-bottom: 1.25rem;
+  }
+
+  .ctrl-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 140px; }
+  .ctrl-group label { font-size: 11px; color: var(--text-muted); }
+  .ctrl-row { display: flex; align-items: center; gap: 8px; }
+  .ctrl-val { font-size: 15px; font-weight: 500; color: var(--text); min-width: 38px; }
+
+  .chart-wrap { position: relative; height: 280px; }
+
+  .chart-legend {
+    display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  .disclaimer {
+    font-size: 11px; color: var(--text-faint);
+    background: var(--warning-light); border: 1px solid #edd59a;
+    border-radius: var(--radius); padding: 10px 14px; line-height: 1.6;
+  }
+
+  footer {
+    margin-top: 2rem; font-size: 11px; color: var(--text-faint);
+    line-height: 1.7; text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <header>
+    <h1>Belgian House Purchase Budget</h1>
+    <p>Estimate your buying power after selling your current home</p>
+  </header>
+
+  <div class="two-col">
+    <!-- LEFT: Inputs -->
+    <div class="col">
+      <div class="card">
+        <p class="card-title">Your current property</p>
+        <div class="input-grid">
+          <div class="field">
+            <label>Outstanding mortgage (€)</label>
+            <input type="number" id="currentMortgage" value="380000" min="0" step="1000">
+          </div>
+          <div class="field">
+            <label>Expected selling price (€)</label>
+            <input type="number" id="sellingPrice" value="680000" min="0" step="1000">
+          </div>
+        </div>
+        <div class="carry-over-box">
+          <div class="carry-over-row">
+            <input type="checkbox" id="carryOver" checked>
+            <label for="carryOver">Carry over current mortgage to Belgian property</label>
+          </div>
+          <p class="carry-over-detail">Transfer your existing balance to avoid early repayment penalties and keep your current rate.</p>
+          <div class="carry-over-amount" id="carryAmountRow" style="display:none;">
+            <span class="co-label">Carried over:</span>
+            <span class="co-amt" id="carryAmountVal">€0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Belgian property</p>
+        <div class="input-grid">
+          <div class="field">
+            <label>Listed price (€)</label>
+            <input type="number" id="belgiumPrice" value="380000" min="0" step="1000">
+          </div>
+          <div class="field">
+            <label>Region</label>
+            <select id="region">
+              <option value="flanders_first">Flanders — first (3%)</option>
+              <option value="flanders_other" selected>Flanders — other (12%)</option>
+              <option value="brussels">Brussels (12.5%)</option>
+              <option value="wallonia">Wallonia (12.5%)</option>
+            </select>
+          </div>
+        </div>
+        <div class="slider-block">
+          <div class="slider-header">
+            <label>Interest rate</label>
+            <span class="val"><span id="rateOut">4.0</span>%</span>
+          </div>
+          <input type="range" id="rate" min="1" max="8" step="0.1" value="4.0">
+          <div class="ticks"><span>1%</span><span>3%</span><span>5%</span><span>7%</span><span>8%</span></div>
+        </div>
+        <div class="slider-block">
+          <div class="slider-header">
+            <label>Mortgage term</label>
+            <span class="val"><span id="termOut">25</span> yrs</span>
+          </div>
+          <input type="range" id="term" min="5" max="30" step="1" value="25">
+          <div class="ticks"><span>5</span><span>10</span><span>15</span><span>20</span><span>25</span><span>30</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Results -->
+    <div class="col">
+      <div class="card">
+        <p class="card-title">Summary</p>
+        <div class="summary-grid">
+          <div class="metric" id="card-equity">
+            <p class="m-label">Net from your sale</p>
+            <p class="m-value" id="equity">—</p>
+            <p class="m-sub">After repaying mortgage</p>
+          </div>
+          <div class="metric" id="card-balance">
+            <p class="m-label">Cash balance</p>
+            <p class="m-value" id="balance">—</p>
+            <p class="m-sub">After buying</p>
+          </div>
+          <div class="metric featured">
+            <p class="m-label">Belgium total cost</p>
+            <p class="m-value" id="belgiumTotal">—</p>
+            <p class="m-sub">Listed price + taxes + fees</p>
+          </div>
+        </div>
+        <div class="monthly-box" id="monthly-box">
+          <div>
+            <p class="ml">Monthly payment</p>
+            <p class="ms" id="monthly-sub">—</p>
+          </div>
+          <p class="mv" id="monthly">—</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Cost breakdown — Belgium</p>
+        <div class="breakdown">
+          <div class="br-row"><span class="desc">Listed price</span><span class="amt" id="b-listed">—</span></div>
+          <div class="br-row"><span class="desc">Registration tax <span class="tag" id="b-rate-tag">—</span></span><span class="amt" id="b-reg">—</span></div>
+          <div class="br-row"><span class="desc">Notary fees (~1%)</span><span class="amt" id="b-notary">—</span></div>
+          <div class="br-row"><span class="desc">Admin & misc.</span><span class="amt">€1,500</span></div>
+          <div class="br-row total"><span class="desc">Total acquisition cost</span><span class="amt" id="b-total-row">—</span></div>
+        </div>
+        <p class="card-title" style="margin-bottom: 8px;">Financing</p>
+        <div class="breakdown" style="margin-bottom:0;">
+          <div class="br-row"><span class="desc">Total acquisition cost</span><span class="amt" id="f-total">—</span></div>
+          <div class="br-row"><span class="desc">Equity / cash from sale</span><span class="amt" id="f-equity">—</span></div>
+          <div class="br-row carry" id="f-carry-row" style="display:none;"><span class="desc">Carried-over mortgage</span><span class="amt" id="f-carry-amt">—</span></div>
+          <div class="br-row total"><span class="desc">New mortgage needed <span id="new-loan-badge"></span></span><span class="amt" id="f-loan">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA to scroll to invest -->
+  <div class="invest-cta-wrap">
+    <button class="invest-cta" onclick="document.getElementById('invest-section').scrollIntoView({behavior:'smooth'})">
+      Explore investment potential with your cash balance
+      <span class="arrow">↓</span>
+    </button>
+  </div>
+
+  <!-- ─────────────────── INVESTMENT SECTION ─────────────────── -->
+  <div id="invest-section">
+    <div class="invest-header">
+      <h2>Investment potential</h2>
+      <span class="cash-pill">Available: <strong id="inv-cash-pill">€0</strong></span>
+    </div>
+
+    <div class="asset-grid">
+      <!-- Bitcoin -->
+      <div class="asset-card btc">
+        <div class="asset-icon">
+          <span class="dot btc-dot"></span> Bitcoin (BTC)
+        </div>
+        <div class="asset-price-row">
+          <label>Price per BTC (€)</label>
+          <input type="number" class="asset-price-input" id="btcPrice" value="80000" min="1" step="1000">
+        </div>
+        <div class="asset-stat">
+          <p class="as-label">Units you could buy</p>
+          <p class="as-value btc-col" id="btc-units">—</p>
+          <p class="as-sub" id="btc-units-sub">—</p>
+        </div>
+        <div class="asset-growth-slider">
+          <div class="slider-header" style="margin-bottom:6px;">
+            <label style="font-size:11px;color:var(--text-muted);">Hypothetical annual growth</label>
+            <span style="font-size:14px;font-weight:500;color:var(--btc);"><span id="btcGrowthOut">25</span>%</span>
+          </div>
+          <input type="range" id="btcGrowth" min="1" max="200" step="1" value="25" style="accent-color:var(--btc);">
+          <div class="ticks"><span>1%</span><span>50%</span><span>100%</span><span>150%</span><span>200%</span></div>
+        </div>
+        <div class="asset-proj">
+          <p class="ap-label">Value after <span class="proj-years-btc">10</span> yrs at <span id="btc-rate-label">25</span>% / yr</p>
+          <p class="ap-value" id="btc-proj">—</p>
+          <p class="ap-gain" id="btc-gain">—</p>
+        </div>
+      </div>
+
+      <!-- Tesla -->
+      <div class="asset-card tsla">
+        <div class="asset-icon">
+          <span class="dot tsla-dot"></span> Tesla (TSLA)
+        </div>
+        <div class="asset-price-row">
+          <label>Price per share (€)</label>
+          <input type="number" class="asset-price-input" id="tslaPrice" value="400" min="1" step="10">
+        </div>
+        <div class="asset-stat">
+          <p class="as-label">Shares you could buy</p>
+          <p class="as-value tsla-col" id="tsla-units">—</p>
+          <p class="as-sub" id="tsla-units-sub">—</p>
+        </div>
+        <div class="asset-growth-slider">
+          <div class="slider-header" style="margin-bottom:6px;">
+            <label style="font-size:11px;color:var(--text-muted);">Hypothetical annual growth</label>
+            <span style="font-size:14px;font-weight:500;color:var(--tsla);"><span id="tslaGrowthOut">25</span>%</span>
+          </div>
+          <input type="range" id="tslaGrowth" min="1" max="200" step="1" value="25" style="accent-color:var(--tsla);">
+          <div class="ticks"><span>1%</span><span>50%</span><span>100%</span><span>150%</span><span>200%</span></div>
+        </div>
+        <div class="asset-proj">
+          <p class="ap-label">Value after <span class="proj-years-tsla">10</span> yrs at <span id="tsla-rate-label">25</span>% / yr</p>
+          <p class="ap-value" id="tsla-proj">—</p>
+          <p class="ap-gain" id="tsla-gain">—</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Combined summary bar -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="width:10px;height:10px;border-radius:50%;background:var(--btc);display:inline-block;flex-shrink:0;"></span>
+        <span style="font-size:12px;color:var(--text-muted);">BTC half</span>
+        <span style="font-size:15px;font-weight:500;color:var(--btc);" id="comb-btc-val">—</span>
+      </div>
+      <span style="font-size:18px;color:var(--text-faint);">+</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="width:10px;height:10px;border-radius:50%;background:var(--tsla);display:inline-block;flex-shrink:0;"></span>
+        <span style="font-size:12px;color:var(--text-muted);">TSLA half</span>
+        <span style="font-size:15px;font-weight:500;color:var(--tsla);" id="comb-tsla-val">—</span>
+      </div>
+      <span style="font-size:18px;color:var(--text-faint);">=</span>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 18px;display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+        <span style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-faint);">Combined after <span id="comb-years">10</span> yrs</span>
+        <span style="font-size:22px;font-weight:500;color:var(--success);" id="comb-total">—</span>
+        <span style="font-size:11px;color:var(--text-faint);" id="comb-gain">—</span>
+      </div>
+    </div>
+
+    <!-- Growth chart -->
+    <div class="chart-card">
+      <p class="card-title" style="margin-bottom: 1rem;">Hypothetical growth over time</p>
+
+      <div class="chart-controls">
+        <div class="ctrl-group" style="max-width:220px;">
+          <label>Time horizon</label>
+          <div class="ctrl-row">
+            <input type="range" id="horizonYears" min="1" max="20" step="1" value="10" style="flex:1;">
+            <span class="ctrl-val"><span id="horizonOut">10</span> yrs</span>
+          </div>
+          <div class="ticks" style="margin-top:4px;"><span>1</span><span>5</span><span>10</span><span>15</span><span>20</span></div>
+        </div>
+        <div style="font-size:11px;color:var(--text-faint);padding-top:18px;">
+          Growth rates are set individually on each asset card above.
+        </div>
+      </div>
+
+      <div class="chart-wrap">
+        <canvas id="growthChart"></canvas>
+      </div>
+
+      <div class="chart-legend">
+        <div class="legend-item"><span class="legend-dot" style="background:var(--btc);"></span>Bitcoin (50%)</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--tsla);"></span>Tesla (50%)</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--accent);"></span>Combined portfolio</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#b0b0b0;"></span>Cash (no investment)</div>
+      </div>
+    </div>
+
+    <div class="disclaimer">
+      <strong>Hypothetical illustration only.</strong> Past performance is no guarantee of future results. Figures assume the full cash balance is invested at a fixed annual rate with no rebalancing, taxes, or fees. Bitcoin and Tesla prices are user-configurable estimates. This is not financial advice.
+    </div>
+  </div>
+
+  <footer style="margin-top: 2rem;">
+    Registration tax rates are indicative. Notary fees vary 0.8–1.5%. Carry-over mortgage (wederopname/reprise) subject to lender approval.<br>
+    Always verify exact figures with a Belgian notary (notaris/notaire).
+  </footer>
+
+</div>
+
+<script>
+  const fmt  = n => '€' + Math.round(n).toLocaleString('de-DE');
+  const fmtN = n => parseFloat(n.toFixed(4)).toLocaleString('de-DE', {maximumFractionDigits: 4});
+
+  const regTax   = { flanders_first: 0.03, flanders_other: 0.12, brussels: 0.125, wallonia: 0.125 };
+  const regLabel = { flanders_first: '3%', flanders_other: '12%', brussels: '12.5%', wallonia: '12.5%' };
+
+  let cashBalance = 0;
+  let growthChart = null;
+
+  /* ── Main calculator ── */
+  function calc() {
+    const mortgage  = parseFloat(document.getElementById('currentMortgage').value) || 0;
+    const sell      = parseFloat(document.getElementById('sellingPrice').value) || 0;
+    const listed    = parseFloat(document.getElementById('belgiumPrice').value) || 0;
+    const rate      = parseFloat(document.getElementById('rate').value);
+    const term      = parseInt(document.getElementById('term').value);
+    const region    = document.getElementById('region').value;
+    const carryOver = document.getElementById('carryOver').checked;
+
+    const taxRate   = regTax[region];
+    const regAmount = listed * taxRate;
+    const notary    = listed * 0.01;
+    const belgTotal = listed + regAmount + notary + 1500;
+
+    const equity        = sell - mortgage;
+    const cashAvailable = carryOver ? sell : equity;
+    const cashLeft      = cashAvailable - belgTotal;
+    const newLoan       = carryOver ? Math.max(0, belgTotal - sell) : Math.max(0, belgTotal - equity);
+    const totalBorrow   = carryOver ? mortgage + newLoan : newLoan;
+
+    cashBalance = Math.max(0, cashLeft);
+
+    document.getElementById('rateOut').textContent  = rate.toFixed(1);
+    document.getElementById('termOut').textContent  = term;
+
+    document.getElementById('carryAmountRow').style.display = carryOver ? 'flex' : 'none';
+    document.getElementById('carryAmountVal').textContent   = fmt(mortgage);
+    document.getElementById('f-carry-row').style.display    = carryOver ? 'flex' : 'none';
+    document.getElementById('f-carry-amt').textContent      = '+ ' + fmt(mortgage);
+
+    const eCard = document.getElementById('card-equity');
+    eCard.querySelector('.m-value').textContent = fmt(equity);
+    eCard.className = 'metric ' + (equity >= 0 ? 'pos' : 'neg');
+
+    document.getElementById('belgiumTotal').textContent = fmt(belgTotal);
+
+    const bCard = document.getElementById('card-balance');
+    bCard.querySelector('.m-value').textContent = fmt(cashLeft);
+    bCard.className = 'metric ' + (cashLeft >= 0 ? 'pos' : 'neg');
+
+    document.getElementById('b-listed').textContent    = fmt(listed);
+    document.getElementById('b-reg').textContent       = fmt(regAmount);
+    document.getElementById('b-notary').textContent    = fmt(notary);
+    document.getElementById('b-rate-tag').textContent  = regLabel[region];
+    document.getElementById('b-total-row').textContent = fmt(belgTotal);
+    document.getElementById('f-total').textContent     = fmt(belgTotal);
+    document.getElementById('f-equity').textContent    = '− ' + fmt(Math.max(0, cashAvailable));
+
+    const badge = document.getElementById('new-loan-badge');
+    if (carryOver && newLoan === 0) badge.innerHTML = '<span class="badge green">fully covered</span>';
+    else if (carryOver) badge.innerHTML = '<span class="badge">top-up only</span>';
+    else badge.innerHTML = '';
+    document.getElementById('f-loan').textContent = totalBorrow > 0 ? fmt(totalBorrow) : '€0';
+
+    let monthly = 0;
+    if (totalBorrow > 0 && rate > 0) {
+      const r = rate / 100 / 12, n = term * 12;
+      monthly = totalBorrow * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+    }
+    const mbox = document.getElementById('monthly-box');
+    if (totalBorrow === 0) {
+      mbox.className = 'monthly-box no-loan';
+      document.getElementById('monthly').textContent     = '€0 / mo';
+      document.getElementById('monthly-sub').textContent = 'No new mortgage needed — fully covered by sale proceeds';
+    } else {
+      mbox.className = 'monthly-box';
+      document.getElementById('monthly').textContent     = fmt(monthly) + ' / mo';
+      const loanDesc = carryOver
+        ? fmt(mortgage) + ' carry-over' + (newLoan > 0 ? ' + ' + fmt(newLoan) + ' top-up' : '')
+        : fmt(newLoan) + ' new loan';
+      document.getElementById('monthly-sub').textContent = rate.toFixed(1) + '% · ' + term + ' yrs · ' + loanDesc;
+    }
+
+    calcInvest();
+  }
+
+  /* ── Investment calculator ── */
+  function calcInvest() {
+    const btcPrice    = parseFloat(document.getElementById('btcPrice').value)    || 80000;
+    const tslaPrice   = parseFloat(document.getElementById('tslaPrice').value)   || 400;
+    const btcGrowth   = parseFloat(document.getElementById('btcGrowth').value)   / 100;
+    const tslaGrowth  = parseFloat(document.getElementById('tslaGrowth').value)  / 100;
+    const years       = parseInt(document.getElementById('horizonYears').value);
+
+    document.getElementById('btcGrowthOut').textContent  = Math.round(btcGrowth * 100);
+    document.getElementById('tslaGrowthOut').textContent = Math.round(tslaGrowth * 100);
+    document.getElementById('horizonOut').textContent    = years;
+
+    document.getElementById('btc-rate-label').textContent  = Math.round(btcGrowth * 100);
+    document.getElementById('tsla-rate-label').textContent = Math.round(tslaGrowth * 100);
+    document.querySelectorAll('.proj-years-btc, .proj-years-tsla').forEach(el => el.textContent = years);
+
+    document.getElementById('inv-cash-pill').textContent = fmt(cashBalance);
+
+    const half      = cashBalance / 2;
+    const btcUnits  = half / btcPrice;
+    const tslaUnits = half / tslaPrice;
+
+    document.getElementById('btc-units').textContent      = fmtN(btcUnits);
+    document.getElementById('btc-units-sub').textContent  = fmt(half) + ' (50%) ÷ ' + fmt(btcPrice) + ' per BTC';
+    document.getElementById('tsla-units').textContent     = Math.floor(tslaUnits).toLocaleString('de-DE') + ' shares';
+    document.getElementById('tsla-units-sub').textContent = fmt(half) + ' (50%) ÷ ' + fmt(tslaPrice) + ' per share';
+
+    const btcProj  = half * Math.pow(1 + btcGrowth,  years);
+    const tslaProj = half * Math.pow(1 + tslaGrowth, years);
+    const btcGain  = btcProj  - half;
+    const tslaGain = tslaProj - half;
+
+    document.getElementById('btc-proj').textContent  = fmt(btcProj);
+    document.getElementById('btc-gain').textContent  = '+ ' + fmt(btcGain)  + ' gain (' + Math.round((btcGain  / (cashBalance || 1)) * 100) + '%)';
+    document.getElementById('tsla-proj').textContent = fmt(tslaProj);
+    document.getElementById('tsla-gain').textContent = '+ ' + fmt(tslaGain) + ' gain (' + Math.round((tslaGain / (cashBalance || 1)) * 100) + '%)';
+
+    const combined     = btcProj + tslaProj;
+    const combinedGain = combined - cashBalance;
+    document.getElementById('comb-btc-val').textContent  = fmt(btcProj);
+    document.getElementById('comb-tsla-val').textContent = fmt(tslaProj);
+    document.getElementById('comb-total').textContent    = fmt(combined);
+    document.getElementById('comb-years').textContent    = years;
+    document.getElementById('comb-gain').textContent     = '+ ' + fmt(combinedGain) + ' total gain (' + Math.round((combinedGain / (cashBalance || 1)) * 100) + '%)';
+
+    renderChart(btcGrowth, tslaGrowth, years);
+  }
+
+  function renderChart(btcRate, tslaRate, years) {
+    const labels = [];
+    const btcData = [], tslaData = [], combinedData = [], cashData = [];
+    const half = cashBalance / 2;
+
+    for (let y = 0; y <= years; y++) {
+      labels.push('Yr ' + y);
+      const b = Math.round(half * Math.pow(1 + btcRate,  y));
+      const t = Math.round(half * Math.pow(1 + tslaRate, y));
+      btcData.push(b);
+      tslaData.push(t);
+      combinedData.push(b + t);
+      cashData.push(Math.round(cashBalance));
+    }
+
+    const ctx = document.getElementById('growthChart').getContext('2d');
+
+    if (growthChart) {
+      growthChart.data.labels            = labels;
+      growthChart.data.datasets[0].data  = btcData;
+      growthChart.data.datasets[1].data  = tslaData;
+      growthChart.data.datasets[2].data  = combinedData;
+      growthChart.data.datasets[3].data  = cashData;
+      growthChart.update('active');
+      return;
+    }
+
+    growthChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Bitcoin (50%)',
+            data: btcData,
+            borderColor: '#f7931a',
+            backgroundColor: 'rgba(247,147,26,0.06)',
+            borderWidth: 2, pointRadius: 3,
+            pointBackgroundColor: '#f7931a',
+            tension: 0.35, fill: true
+          },
+          {
+            label: 'Tesla (50%)',
+            data: tslaData,
+            borderColor: '#cc0000',
+            backgroundColor: 'rgba(204,0,0,0.04)',
+            borderWidth: 2, pointRadius: 3,
+            pointBackgroundColor: '#cc0000',
+            tension: 0.35, fill: true,
+            borderDash: [5, 4]
+          },
+          {
+            label: 'Combined portfolio',
+            data: combinedData,
+            borderColor: '#2a5c45',
+            backgroundColor: 'transparent',
+            borderWidth: 2.5, pointRadius: 3,
+            pointBackgroundColor: '#2a5c45',
+            tension: 0.35, fill: false
+          },
+          {
+            label: 'Cash (no investment)',
+            data: cashData,
+            borderColor: '#b0b0b0',
+            backgroundColor: 'transparent',
+            borderWidth: 1.5, pointRadius: 0,
+            tension: 0, fill: false,
+            borderDash: [3, 3]
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1a1916',
+            titleColor: 'rgba(255,255,255,0.6)',
+            bodyColor: '#fff',
+            padding: 10, cornerRadius: 8,
+            callbacks: {
+              label: ctx => ' ' + ctx.dataset.label + ': €' + ctx.parsed.y.toLocaleString('de-DE')
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(0,0,0,0.05)', drawTicks: false },
+            ticks: { color: '#9e9b94', font: { size: 11 } }
+          },
+          y: {
+            grid: { color: 'rgba(0,0,0,0.05)', drawTicks: false },
+            ticks: {
+              color: '#9e9b94', font: { size: 11 },
+              callback: v => '€' + (v >= 1000000
+                ? (v / 1000000).toFixed(1) + 'M'
+                : v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v)
+            }
+          }
+        }
+      }
+    });
+  }
+
+  /* ── Event listeners ── */
+  ['currentMortgage','sellingPrice','belgiumPrice','region'].forEach(id =>
+    document.getElementById(id).addEventListener('input', calc));
+  document.getElementById('rate').addEventListener('input', calc);
+  document.getElementById('term').addEventListener('input', calc);
+  document.getElementById('carryOver').addEventListener('change', calc);
+  document.getElementById('btcPrice').addEventListener('input', calcInvest);
+  document.getElementById('tslaPrice').addEventListener('input', calcInvest);
+  document.getElementById('btcGrowth').addEventListener('input', calcInvest);
+  document.getElementById('tslaGrowth').addEventListener('input', calcInvest);
+  document.getElementById('horizonYears').addEventListener('input', calcInvest);
+
+  calc();
+</script>
+</body>
+</html>
