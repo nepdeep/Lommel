@@ -84,23 +84,35 @@ def get_current_branch(repo):
 # ── GitHub CLI helpers ────────────────────────────────────────
 
 def gh_installed():
-    r = run_cmd(["gh", "--version"], allow_fail=True)
-    return r.returncode == 0
+    try:
+        r = run_cmd(["gh", "--version"], allow_fail=True)
+        return r.returncode == 0
+    except FileNotFoundError:
+        return False
 
 
 def gh_logged_in():
-    r = run_cmd(["gh", "auth", "status"], allow_fail=True)
-    return r.returncode == 0
+    try:
+        r = run_cmd(["gh", "auth", "status"], allow_fail=True)
+        return r.returncode == 0
+    except FileNotFoundError:
+        return False
 
 
 def gh_setup_git():
     """Configure git to use gh as the credential helper."""
-    return run_cmd(["gh", "auth", "setup-git"], allow_fail=True)
+    try:
+        return run_cmd(["gh", "auth", "setup-git"], allow_fail=True)
+    except FileNotFoundError:
+        return None
 
 
 def gh_whoami():
-    r = run_cmd(["gh", "api", "user", "--jq", ".login"], allow_fail=True)
-    return r.stdout.strip() if r.returncode == 0 else ""
+    try:
+        r = run_cmd(["gh", "api", "user", "--jq", ".login"], allow_fail=True)
+        return r.stdout.strip() if r.returncode == 0 else ""
+    except FileNotFoundError:
+        return ""
 
 
 def diagnose(repo):
