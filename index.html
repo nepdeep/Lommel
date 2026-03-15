@@ -539,9 +539,16 @@ input[type=range]::-moz-range-thumb {
         <table style="width:100%;border-collapse:collapse;">
           <tr class="bp-row"><td class="bp-label">Listed price</td><td class="bp-amt" id="bp-listed">—</td></tr>
           <tr class="bp-row"><td class="bp-label">Registration tax <span id="bp-tag" style="font-size:9px;background:rgba(251,191,94,0.15);color:#fbbf5e;border-radius:3px;padding:1px 5px;margin-left:3px;">—</span></td><td class="bp-amt" id="bp-reg">—</td></tr>
-          <tr class="bp-row"><td class="bp-label">Notary fees (~1%)</td><td class="bp-amt" id="bp-notary">—</td></tr>
-          <tr class="bp-row"><td class="bp-label">Admin &amp; misc.</td><td class="bp-amt">€1,500</td></tr>
-          <tr class="bp-row"><td class="bp-label">Renovation budget</td><td class="bp-amt">€20,000</td></tr>
+          <tr class="bp-row"><td class="bp-label">Notary fees (<span id="bp-notary-pct">1.5</span>%)</td><td class="bp-amt" id="bp-notary">—</td></tr>
+          <tr class="bp-row"><td class="bp-label">Hypotheekadvies (mortgage advice)</td><td class="bp-amt" id="bp-advice">—</td></tr>
+          <tr class="bp-row"><td class="bp-label">Admin &amp; misc.</td><td class="bp-amt" id="bp-admin">—</td></tr>
+          <tr class="bp-row"><td class="bp-label">Renovation</td><td class="bp-amt">€20,000</td></tr>
+          <tr class="bp-row"><td class="bp-label">Hypotheekakte notaris (mortgage deed)</td><td class="bp-amt" id="bp-deed">—</td></tr>
+          <tr class="bp-row"><td class="bp-label">Bankdossierkosten (bank file fee)</td><td class="bp-amt" id="bp-bank">—</td></tr>
+          <tr class="bp-row"><td class="bp-label">Schuldsaldoverzekering (life insurance)</td><td class="bp-amt" id="bp-ssv">—</td></tr>
+          <tr class="bp-row"><td class="bp-label">Brandverzekering jaar 1 (fire insurance yr 1)</td><td class="bp-amt" id="bp-fire">—</td></tr>
+          <tr class="bp-row"><td class="bp-label">Bouwkundige keuring (structural inspection)</td><td class="bp-amt" id="bp-inspect">—</td></tr>
+          <tr class="bp-row"><td class="bp-label">Verhuiskosten (moving costs)</td><td class="bp-amt" id="bp-moving">—</td></tr>
           <tr style="border-top:1px solid rgba(255,255,255,0.1);">
             <td style="padding:6px 4px 2px;font-size:11px;font-weight:600;color:#fbbf5e;font-family:var(--mono);">Total</td>
             <td style="padding:6px 4px 2px;font-size:13px;font-weight:600;color:#fbbf5e;font-family:var(--mono);text-align:right;" id="bp-total">—</td>
@@ -625,6 +632,29 @@ input[type=range]::-moz-range-thumb {
             </div>
           </div>
         </div>
+        <div class="input-row" style="margin-top:4px;">
+          <div class="field">
+            <label>Hypotheekadvies kosten (€) <span style="font-size:9px;color:var(--faint);font-weight:400;">broker/advisor fee</span></label>
+            <div class="input-wrap">
+              <input type="number" id="mortgageAdvice" value="1500" min="0" step="100">
+            </div>
+          </div>
+          <div class="field">
+            <label>Notary fees <span style="font-size:9px;color:var(--faint);font-weight:400;">worst case 1.5%</span></label>
+            <div class="input-wrap">
+              <input type="number" id="notaryPct" value="1.5" min="0.5" max="3" step="0.1">
+              <span class="sfx">%</span>
+            </div>
+          </div>
+        </div>
+        <div class="input-row" style="margin-top:4px;">
+          <div class="field">
+            <label>Admin &amp; misc. (€) <span style="font-size:9px;color:var(--faint);font-weight:400;">worst case €3,000</span></label>
+            <div class="input-wrap">
+              <input type="number" id="adminMisc" value="3000" min="0" step="100">
+            </div>
+          </div>
+        </div>
         <div class="slider-row">
           <div class="slider-field">
             <div class="slider-head">
@@ -644,7 +674,40 @@ input[type=range]::-moz-range-thumb {
           </div>
         </div>
       </div>
-    </div>
+
+      <div class="card">
+        <p class="card-title">Additional costs</p>
+        <div class="input-row">
+          <div class="field">
+            <label>Hypotheekakte notaris (€) <span style="font-size:9px;color:var(--faint);font-weight:400;">mortgage deed</span></label>
+            <div class="input-wrap"><input type="number" id="mortgageDeed" value="3000" min="0" step="100"></div>
+          </div>
+          <div class="field">
+            <label>Bankdossierkosten (€) <span style="font-size:9px;color:var(--faint);font-weight:400;">file fee</span></label>
+            <div class="input-wrap"><input type="number" id="bankFee" value="750" min="0" step="50"></div>
+          </div>
+        </div>
+        <div class="input-row">
+          <div class="field">
+            <label>Schuldsaldoverzekering (€) <span style="font-size:9px;color:var(--faint);font-weight:400;">life insurance lump sum</span></label>
+            <div class="input-wrap"><input type="number" id="ssv" value="8000" min="0" step="500"></div>
+          </div>
+          <div class="field">
+            <label>Brandverzekering jaar 1 (€) <span style="font-size:9px;color:var(--faint);font-weight:400;">fire insurance</span></label>
+            <div class="input-wrap"><input type="number" id="fireInsurance" value="700" min="0" step="50"></div>
+          </div>
+        </div>
+        <div class="input-row">
+          <div class="field">
+            <label>Bouwkundige keuring (€) <span style="font-size:9px;color:var(--faint);font-weight:400;">structural inspection</span></label>
+            <div class="input-wrap"><input type="number" id="inspection" value="800" min="0" step="50"></div>
+          </div>
+          <div class="field">
+            <label>Verhuiskosten (€) <span style="font-size:9px;color:var(--faint);font-weight:400;">moving costs NL→BE</span></label>
+            <div class="input-wrap"><input type="number" id="moving" value="5000" min="0" step="100"></div>
+          </div>
+        </div>
+      </div>
 
     <!-- RIGHT: Results -->
     <div class="col">
@@ -681,9 +744,16 @@ input[type=range]::-moz-range-thumb {
               <table style="width:100%;border-collapse:collapse;">
                 <tr class="bp-row lp"><td class="bp-label lp">Listed price</td><td class="bp-amt lp" id="bt-listed">—</td></tr>
                 <tr class="bp-row lp"><td class="bp-label lp">Registration tax <span id="bt-tag" style="font-size:9px;background:var(--accent-bg);color:var(--accent);border-radius:3px;padding:1px 4px;">—</span></td><td class="bp-amt lp" id="bt-reg">—</td></tr>
-                <tr class="bp-row lp"><td class="bp-label lp">Notary fees (~1%)</td><td class="bp-amt lp" id="bt-notary">—</td></tr>
-                <tr class="bp-row lp"><td class="bp-label lp">Admin &amp; misc.</td><td class="bp-amt lp">€1,500</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">Notary fees (<span id="bt-notary-pct">1.5</span>%)</td><td class="bp-amt lp" id="bt-notary">—</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">Hypotheekadvies (mortgage advice)</td><td class="bp-amt lp" id="bt-advice">—</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">Admin &amp; misc.</td><td class="bp-amt lp" id="bt-admin">—</td></tr>
                 <tr class="bp-row lp"><td class="bp-label lp">Renovation</td><td class="bp-amt lp">€20,000</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">Hypotheekakte notaris (mortgage deed)</td><td class="bp-amt lp" id="bt-deed">—</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">Bankdossierkosten (bank file fee)</td><td class="bp-amt lp" id="bt-bank">—</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">Schuldsaldoverzekering (life insurance)</td><td class="bp-amt lp" id="bt-ssv">—</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">Brandverzekering jaar 1 (fire insurance yr 1)</td><td class="bp-amt lp" id="bt-fire">—</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">Bouwkundige keuring (structural inspection)</td><td class="bp-amt lp" id="bt-inspect">—</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">Verhuiskosten (moving costs)</td><td class="bp-amt lp" id="bt-moving">—</td></tr>
                 <tr style="border-top:1px solid var(--border);">
                   <td style="padding:6px 4px 2px;font-size:11px;font-weight:600;font-family:var(--mono);color:var(--text);">= Total</td>
                   <td style="padding:6px 4px 2px;font-size:13px;font-weight:600;font-family:var(--mono);text-align:right;color:var(--text);" id="bt-total">—</td>
@@ -729,9 +799,16 @@ input[type=range]::-moz-range-thumb {
         <table class="bk-table">
           <tr><td class="td-label">Listed price</td><td class="td-amt" id="b-listed">—</td></tr>
           <tr><td class="td-label">Registration tax <span class="td-tag" id="b-rate-tag">—</span></td><td class="td-amt" id="b-reg">—</td></tr>
-          <tr><td class="td-label">Notary fees (~1%)</td><td class="td-amt" id="b-notary">—</td></tr>
-          <tr><td class="td-label">Admin &amp; misc.</td><td class="td-amt">€1,500</td></tr>
+          <tr><td class="td-label">Notary fees (<span id="b-notary-pct">1.5</span>%)</td><td class="td-amt" id="b-notary">—</td></tr>
+          <tr><td class="td-label">Hypotheekadvies (mortgage advice)</td><td class="td-amt" id="b-advice">—</td></tr>
+          <tr><td class="td-label">Admin &amp; misc.</td><td class="td-amt" id="b-admin">—</td></tr>
           <tr><td class="td-label">Renovation budget</td><td class="td-amt">€20,000</td></tr>
+          <tr><td class="td-label">Hypotheekakte notaris (mortgage deed)</td><td class="td-amt" id="b-deed">—</td></tr>
+          <tr><td class="td-label">Bankdossierkosten (bank file fee)</td><td class="td-amt" id="b-bank">—</td></tr>
+          <tr><td class="td-label">Schuldsaldoverzekering (life insurance)</td><td class="td-amt" id="b-ssv">—</td></tr>
+          <tr><td class="td-label">Brandverzekering jaar 1 (fire insurance yr 1)</td><td class="td-amt" id="b-fire">—</td></tr>
+          <tr><td class="td-label">Bouwkundige keuring (structural inspection)</td><td class="td-amt" id="b-inspect">—</td></tr>
+          <tr><td class="td-label">Verhuiskosten (moving costs)</td><td class="td-amt" id="b-moving">—</td></tr>
           <tr class="total"><td>Total acquisition</td><td class="td-amt" id="b-total-row">—</td></tr>
         </table>
 
@@ -1015,9 +1092,18 @@ input[type=range]::-moz-range-thumb {
     const carryOver = document.getElementById('carryOver').checked;
 
     const taxRate   = regTax[region];
-    const regAmount = listed * taxRate;
-    const notary    = listed * 0.01;
-    const belgTotal = listed + regAmount + notary + 1500 + 20000;
+    const regAmount     = listed * taxRate;
+    const notaryPct     = (parseFloat(document.getElementById('notaryPct').value) || 1.5) / 100;
+    const notary        = listed * notaryPct;
+    const adviceFee     = parseFloat(document.getElementById('mortgageAdvice').value) || 0;
+    const adminMisc     = parseFloat(document.getElementById('adminMisc').value) || 0;
+    const mortgageDeed  = parseFloat(document.getElementById('mortgageDeed').value) || 0;
+    const bankFee       = parseFloat(document.getElementById('bankFee').value) || 0;
+    const ssv           = parseFloat(document.getElementById('ssv').value) || 0;
+    const fireInsurance = parseFloat(document.getElementById('fireInsurance').value) || 0;
+    const inspection    = parseFloat(document.getElementById('inspection').value) || 0;
+    const moving        = parseFloat(document.getElementById('moving').value) || 0;
+    const belgTotal     = listed + regAmount + notary + adviceFee + adminMisc + mortgageDeed + bankFee + ssv + fireInsurance + inspection + moving + 20000;
 
     const equity        = sell - mortgage;
     const cashAvailable = carryOver ? sell : equity;
@@ -1028,11 +1114,20 @@ input[type=range]::-moz-range-thumb {
     cashBalance = Math.max(0, cashLeft);
 
     // Sync hero buy popup
-    document.getElementById('bp-listed').textContent  = fmt(listed);
-    document.getElementById('bp-reg').textContent     = fmt(regAmount);
-    document.getElementById('bp-notary').textContent  = fmt(notary);
-    document.getElementById('bp-tag').textContent     = regLabel[region];
-    document.getElementById('bp-total').textContent   = fmt(belgTotal);
+    document.getElementById('bp-listed').textContent   = fmt(listed);
+    document.getElementById('bp-reg').textContent      = fmt(regAmount);
+    document.getElementById('bp-notary-pct').textContent = (notaryPct * 100).toFixed(1);
+    document.getElementById('bp-notary').textContent   = fmt(notary);
+    document.getElementById('bp-advice').textContent   = fmt(adviceFee);
+    document.getElementById('bp-admin').textContent    = fmt(adminMisc);
+    document.getElementById('bp-deed').textContent     = fmt(mortgageDeed);
+    document.getElementById('bp-bank').textContent     = fmt(bankFee);
+    document.getElementById('bp-ssv').textContent      = fmt(ssv);
+    document.getElementById('bp-fire').textContent     = fmt(fireInsurance);
+    document.getElementById('bp-inspect').textContent  = fmt(inspection);
+    document.getElementById('bp-moving').textContent   = fmt(moving);
+    document.getElementById('bp-tag').textContent      = regLabel[region];
+    document.getElementById('bp-total').textContent    = fmt(belgTotal);
 
     // Sync invest popup
     document.getElementById('ip-sell').textContent     = fmt(sell);
@@ -1051,11 +1146,20 @@ input[type=range]::-moz-range-thumb {
     document.getElementById('eq-mort').textContent = fmt(mortgage);
     document.getElementById('eq-net').textContent  = fmt(equity);
 
-    document.getElementById('bt-listed').textContent  = fmt(listed);
-    document.getElementById('bt-reg').textContent     = fmt(regAmount);
-    document.getElementById('bt-notary').textContent  = fmt(notary);
-    document.getElementById('bt-tag').textContent     = regLabel[region];
-    document.getElementById('bt-total').textContent   = fmt(belgTotal);
+    document.getElementById('bt-listed').textContent     = fmt(listed);
+    document.getElementById('bt-reg').textContent        = fmt(regAmount);
+    document.getElementById('bt-notary-pct').textContent = (notaryPct * 100).toFixed(1);
+    document.getElementById('bt-notary').textContent     = fmt(notary);
+    document.getElementById('bt-advice').textContent     = fmt(adviceFee);
+    document.getElementById('bt-admin').textContent      = fmt(adminMisc);
+    document.getElementById('bt-deed').textContent       = fmt(mortgageDeed);
+    document.getElementById('bt-bank').textContent       = fmt(bankFee);
+    document.getElementById('bt-ssv').textContent        = fmt(ssv);
+    document.getElementById('bt-fire').textContent       = fmt(fireInsurance);
+    document.getElementById('bt-inspect').textContent    = fmt(inspection);
+    document.getElementById('bt-moving').textContent     = fmt(moving);
+    document.getElementById('bt-tag').textContent        = regLabel[region];
+    document.getElementById('bt-total').textContent      = fmt(belgTotal);
 
     document.getElementById('cl-sell').textContent     = fmt(sell);
     document.getElementById('cl-belgcost').textContent = fmt(belgTotal);
@@ -1088,10 +1192,19 @@ input[type=range]::-moz-range-thumb {
     bCard.className = 'metric ' + (cashLeft >= 0 ? 'pos' : 'neg');
 
     // Breakdown
-    document.getElementById('b-listed').textContent    = fmt(listed);
-    document.getElementById('b-reg').textContent       = fmt(regAmount);
-    document.getElementById('b-notary').textContent    = fmt(notary);
-    document.getElementById('b-rate-tag').textContent  = regLabel[region];
+    document.getElementById('b-listed').textContent      = fmt(listed);
+    document.getElementById('b-reg').textContent         = fmt(regAmount);
+    document.getElementById('b-notary-pct').textContent  = (notaryPct * 100).toFixed(1);
+    document.getElementById('b-notary').textContent      = fmt(notary);
+    document.getElementById('b-advice').textContent      = fmt(adviceFee);
+    document.getElementById('b-admin').textContent       = fmt(adminMisc);
+    document.getElementById('b-deed').textContent        = fmt(mortgageDeed);
+    document.getElementById('b-bank').textContent        = fmt(bankFee);
+    document.getElementById('b-ssv').textContent         = fmt(ssv);
+    document.getElementById('b-fire').textContent        = fmt(fireInsurance);
+    document.getElementById('b-inspect').textContent     = fmt(inspection);
+    document.getElementById('b-moving').textContent      = fmt(moving);
+    document.getElementById('b-rate-tag').textContent    = regLabel[region];
     document.getElementById('b-total-row').textContent = fmt(belgTotal);
     document.getElementById('f-total').textContent     = fmt(belgTotal);
     document.getElementById('f-equity').textContent    = '− ' + fmt(Math.max(0, cashAvailable));
@@ -1273,7 +1386,8 @@ input[type=range]::-moz-range-thumb {
     if (el) el.classList.toggle('hidden-series', meta.hidden);
   }
 
-  ['currentMortgage','sellingPrice','belgiumPrice','region'].forEach(id =>
+  ['currentMortgage','sellingPrice','belgiumPrice','region','mortgageAdvice','notaryPct','adminMisc',
+   'mortgageDeed','bankFee','ssv','fireInsurance','inspection','moving'].forEach(id =>
     document.getElementById(id).addEventListener('input', calc));
   document.getElementById('rate').addEventListener('input', calc);
   document.getElementById('term').addEventListener('input', calc);
