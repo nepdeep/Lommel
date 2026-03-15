@@ -1248,7 +1248,7 @@ input[type=range]::-moz-range-thumb {
         if (e.target.tagName === 'INPUT') return;
         row.enabled = !row.enabled;
         tr.classList.toggle('bk-disabled', !row.enabled);
-        recalcBkTotal();
+        calc();
       });
       if (!row.fromCalc) {
         tr.querySelector('input').addEventListener('input', () => { recalcBkTotal(); calc(); });
