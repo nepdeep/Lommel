@@ -15,18 +15,20 @@ BASE_EXCLUDED_NAMES = {
     "bkup_html.py",
     "bkup_python.py",
     "bkup_combined.py",
-    "gitpushui.py",
 }
 BACKUP_PATTERN = r"^(.+)R(\d+)\.backup\.(.+)$"
 
 
 class BackupManager:
-    def __init__(self, root_dir=None, backup_dir=BACKUP_DIR):
-        self.root_dir = Path(root_dir or os.getcwd()).resolve()
+    def __init__(self, root_dir=None, backup_dir=BACKUP_DIR, exclude_gitpushui=True):
+        self.root_dir = Path(root_dir or Path(__file__).resolve().parent).resolve()
         self.backup_dir = self.root_dir / backup_dir
+        self.exclude_gitpushui = exclude_gitpushui
 
     def get_excluded_names(self):
         excluded = {name.lower() for name in BASE_EXCLUDED_NAMES}
+        if self.exclude_gitpushui:
+            excluded.add("gitpushui.py")
         try:
             excluded.add(Path(__file__).name.lower())
         except Exception:
@@ -209,6 +211,7 @@ class BackupGUI(tk.Tk):
         self.root_dir_var = tk.StringVar(value=str(self.manager.root_dir))
         self.status_var = tk.StringVar(value="Ready")
         self.restore_ext_var = tk.StringVar(value=".py")
+        self.exclude_gitpushui_var = tk.BooleanVar(value=True)
 
         self.backup_file_map = {}
         self.restore_file_map = {}
@@ -263,6 +266,7 @@ class BackupGUI(tk.Tk):
         style.configure("TLabelframe", background=card, bordercolor=border, relief="solid")
         style.configure("TLabelframe.Label", background=card, foreground=text, font=("Segoe UI Semibold", 10))
         style.configure("TRadiobutton", background=card, foreground=text, font=("Segoe UI", 10))
+        style.configure("TCheckbutton", background=card, foreground=text, font=("Segoe UI", 10))
         style.configure("TEntry", padding=7)
         style.configure("TCombobox", padding=6)
 
@@ -298,22 +302,24 @@ class BackupGUI(tk.Tk):
         header.columnconfigure(0, weight=1)
 
         ttk.Label(header, text="Backup Manager", style="Header.TLabel").grid(row=0, column=0, sticky="w")
-        ttk.Label(header, text="Clear backup and restore for HTML and Python files", style="Muted.TLabel").grid(row=1, column=0, sticky="w", pady=(2, 0))
+        ttk.Label(header, text="Clear backup and restore for HTML and Python files in the selected folder", style="Muted.TLabel").grid(row=1, column=0, sticky="w", pady=(2, 0))
         ttk.Button(header, text="Refresh", style="Secondary.TButton", command=self.refresh_all).grid(row=0, column=1, rowspan=2, sticky="e")
 
         top = ttk.Frame(self, style="Card.TFrame", padding=16)
         top.grid(row=1, column=0, sticky="ew", padx=18, pady=(0, 12))
         top.columnconfigure(1, weight=1)
-        top.columnconfigure(3, weight=1)
+        top.columnconfigure(1, weight=1)
+        top.columnconfigure(4, weight=1)
 
         ttk.Label(top, text="Folder", style="Title.TLabel").grid(row=0, column=0, sticky="w")
         ttk.Entry(top, textvariable=self.root_dir_var).grid(row=0, column=1, sticky="ew", padx=(10, 10))
-        ttk.Button(top, text="Browse", style="Secondary.TButton", command=self.choose_folder).grid(row=0, column=2, sticky="ew")
-        ttk.Button(top, text="Open Folder", style="Secondary.TButton", command=self.open_working_folder).grid(row=0, column=3, sticky="ew", padx=(10, 0))
+        ttk.Button(top, text="Apply", style="Secondary.TButton", command=self.apply_folder_from_entry).grid(row=0, column=2, sticky="ew")
+        ttk.Button(top, text="Browse", style="Secondary.TButton", command=self.choose_folder).grid(row=0, column=3, sticky="ew", padx=(10, 0))
+        ttk.Button(top, text="Open Folder", style="Secondary.TButton", command=self.open_working_folder).grid(row=0, column=4, sticky="ew", padx=(10, 0))
 
         type_row = ttk.Frame(top, style="Card.TFrame")
         type_row.grid(row=1, column=0, columnspan=4, sticky="ew", pady=(14, 0))
-        type_row.columnconfigure(6, weight=1)
+        type_row.columnconfigure(7, weight=1)
 
         ttk.Label(type_row, text="Show", style="Title.TLabel").grid(row=0, column=0, sticky="w")
         ttk.Radiobutton(type_row, text="All files", value="both", variable=self.selected_type, command=self.refresh_all).grid(row=0, column=1, padx=(12, 4), sticky="w")
@@ -326,6 +332,12 @@ class BackupGUI(tk.Tk):
         self.py_count_label.grid(row=0, column=5, padx=6, sticky="w")
         self.backup_count_label = ttk.Label(type_row, text="Backups: 0", style="Chip.TLabel")
         self.backup_count_label.grid(row=0, column=6, padx=6, sticky="w")
+        ttk.Checkbutton(
+            type_row,
+            text="Exclude GITpushUI.py",
+            variable=self.exclude_gitpushui_var,
+            command=self.on_toggle_exclude_gitpushui,
+        ).grid(row=0, column=7, padx=(14, 0), sticky="e")
 
         content = ttk.Frame(self, style="App.TFrame")
         content.grid(row=2, column=0, sticky="nsew", padx=18, pady=(0, 10))
@@ -350,13 +362,12 @@ class BackupGUI(tk.Tk):
 
     def _build_backup_tab(self):
         self.backup_tab.columnconfigure(0, weight=1)
-        self.backup_tab.rowconfigure(2, weight=1)
 
         ttk.Label(self.backup_tab, text="Backup files in this folder", style="Title.TLabel").grid(row=0, column=0, sticky="w")
         ttk.Label(self.backup_tab, text="Pick a file and save a new revision", style="CardSub.TLabel").grid(row=1, column=0, sticky="w", pady=(2, 12))
 
         desc = ttk.Frame(self.backup_tab, style="Card.TFrame")
-        desc.grid(row=2, column=0, sticky="ew", pady=(0, 12))
+        desc.grid(row=2, column=0, sticky="new", pady=(0, 12))
         desc.columnconfigure(1, weight=1)
         ttk.Label(desc, text="Backup label", background=self.colors["card"], foreground=self.colors["text"], font=("Segoe UI Semibold", 10)).grid(row=0, column=0, sticky="w")
         ttk.Entry(desc, textvariable=self.description_var).grid(row=0, column=1, sticky="ew", padx=(10, 10))
@@ -364,15 +375,15 @@ class BackupGUI(tk.Tk):
         ttk.Button(desc, text="Clear", style="Secondary.TButton", command=lambda: self.description_var.set("")).grid(row=0, column=3)
 
         file_box = ttk.LabelFrame(self.backup_tab, text="Files available to back up", padding=12)
-        file_box.grid(row=3, column=0, sticky="nsew")
+        file_box.grid(row=3, column=0, sticky="ew")
         file_box.columnconfigure(0, weight=1)
-        file_box.rowconfigure(0, weight=1)
 
         self.backup_tree = ttk.Treeview(
             file_box,
             columns=("filetype", "filename", "nextrev"),
             show="headings",
             selectmode="browse",
+            height=4,
         )
         self.backup_tree.heading("filetype", text="Type")
         self.backup_tree.heading("filename", text="File")
@@ -380,7 +391,7 @@ class BackupGUI(tk.Tk):
         self.backup_tree.column("filetype", width=90, anchor="center")
         self.backup_tree.column("filename", width=520, anchor="w")
         self.backup_tree.column("nextrev", width=120, anchor="center")
-        self.backup_tree.grid(row=0, column=0, sticky="nsew")
+        self.backup_tree.grid(row=0, column=0, sticky="ew")
         self.backup_tree.bind("<Double-1>", lambda event: self.backup_selected_file())
 
         backup_scroll = ttk.Scrollbar(file_box, orient="vertical", command=self.backup_tree.yview)
@@ -442,12 +453,30 @@ class BackupGUI(tk.Tk):
         self.status_var.set(text)
         self.update_idletasks()
 
+
+    def apply_folder_from_entry(self):
+        selected = self.root_dir_var.get().strip()
+        if not selected:
+            messagebox.showinfo("Folder", "Enter a folder path first.")
+            return
+        path = Path(selected).expanduser()
+        if not path.exists() or not path.is_dir():
+            messagebox.showerror("Invalid folder", f"Folder not found:\n{path}")
+            return
+        self.manager = BackupManager(root_dir=path, exclude_gitpushui=self.exclude_gitpushui_var.get())
+        self.root_dir_var.set(str(self.manager.root_dir))
+        self.refresh_all()
+
     def choose_folder(self):
         selected = filedialog.askdirectory(initialdir=str(self.manager.root_dir), title="Choose working folder")
         if not selected:
             return
-        self.manager = BackupManager(root_dir=selected)
+        self.manager = BackupManager(root_dir=selected, exclude_gitpushui=self.exclude_gitpushui_var.get())
         self.root_dir_var.set(str(self.manager.root_dir))
+        self.refresh_all()
+
+    def on_toggle_exclude_gitpushui(self):
+        self.manager.exclude_gitpushui = self.exclude_gitpushui_var.get()
         self.refresh_all()
 
     def open_path(self, path):
@@ -482,7 +511,10 @@ class BackupGUI(tk.Tk):
             self.description_var.set(self.default_description())
 
         listed_backup_files = len(self.backup_tree.get_children())
-        self.set_status(f"Showing {listed_backup_files} file(s) to back up and {total_backups} backup revision(s)")
+        gitpushui_state = "excluded" if self.exclude_gitpushui_var.get() else "included"
+        self.set_status(
+            f"Folder: {self.manager.root_dir} | Showing {listed_backup_files} file(s) to back up and {total_backups} backup revision(s) | GITpushUI.py {gitpushui_state}"
+        )
 
     def refresh_backup_files_list(self):
         for item in self.backup_tree.get_children():
