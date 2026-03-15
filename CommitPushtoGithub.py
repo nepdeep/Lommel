@@ -246,6 +246,12 @@ class App(tk.Tk):
             # 3. Push
             branch_r = git(["branch", "--show-current"], self.repo)
             branch   = branch_r.stdout.strip() or "main"
+
+            # If local branch is 'master', rename it to 'main' to match GitHub default
+            if branch == "master":
+                git(["branch", "-M", "main"], self.repo)
+                branch = "main"
+
             self._log(f"Pushing branch '{branch}' to GitHub...", "dim")
 
             r = git(["push", "--set-upstream", "origin", branch], self.repo)
