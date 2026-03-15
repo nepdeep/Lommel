@@ -991,10 +991,12 @@ class GitPushUI(tk.Tk):
             SetupWizard(self, self.repo, issues, self._after_wizard)
             return
 
-        # Always ensure authenticated before pushing
-        self._ensure_gh_auth(then=self._push_now)
+        # Try pushing directly first — git may already have credentials
+        # via Windows Credential Manager, SSH keys, or gh credential helper.
+        # Only trigger gh login if the push actually fails with an auth error.
+        self._push_now(first_attempt=True)
 
-    def _push_now(self):
+    def _push_now(self, first_attempt=False):
         remote = get_remote_url(self.repo)
         if not remote:
             self._log_msg("No remote configured.", "err"); return
@@ -1009,22 +1011,23 @@ class GitPushUI(tk.Tk):
         if r.returncode == 0:
             self._log_msg("Push successful", "ok")
             self._refresh_ui()
+            return
+
+        stderr = r.stderr.lower()
+        is_auth_error = any(k in stderr for k in (
+            "authentication", "credential", "authorization",
+            "403", "401", "permission denied", "could not read",
+            "invalid username", "bad credentials",
+        ))
+
+        if is_auth_error and first_attempt:
+            self._log_msg("Auth failed — launching GitHub login...", "warn")
+            self._ensure_gh_auth(then=lambda: self._push_now(first_attempt=False))
+        elif "rejected" in stderr:
+            self._log_msg(
+                "Push rejected — pull and merge remote changes first.", "warn")
         else:
-            stderr = r.stderr.lower()
-            if any(k in stderr for k in
-                   ("authentication", "credential", "authorization",
-                    "403", "401", "permission denied")):
-                self._log_msg(
-                    "Auth error — re-login required. Retrying...", "warn")
-                run_cmd(["gh", "auth", "logout",
-                         "--hostname", "github.com"], allow_fail=True)
-                self._ensure_gh_auth(then=self._push_now)
-            elif "rejected" in stderr:
-                self._log_msg(
-                    "Push rejected — pull and merge remote changes first.",
-                    "warn")
-            else:
-                self._log_msg("Push failed — see output above.", "err")
+            self._log_msg("Push failed — see output above.", "err")
 
     # ── Log helpers ───────────────────────────
 
