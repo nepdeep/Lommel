@@ -299,7 +299,10 @@ class App(tk.Tk):
                  font=("Segoe UI", 9), bg=BG, fg=DIM).pack(anchor="w", pady=(4, 6))
 
         self._push_btn = btn(pf, "⬆  Push to GitHub", self._do_push, BLUE, BLUE_HV)
-        self._push_btn.pack(anchor="w")
+        self._push_btn.pack(side="left")
+
+        btn(pf, "⚡ Auto Commit & Push", self._do_auto,
+            "#6e40c9", "#8957e5").pack(side="left", padx=(10, 0))
 
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x", pady=(6, 0))
 
@@ -434,6 +437,18 @@ class App(tk.Tk):
 
         finally:
             self._commit_btn.config(state="normal", text="Commit")
+
+    # ── Auto Commit & Push ────────────────────
+
+    def _do_auto(self):
+        """Commit with default message then push — one click."""
+        if not self.repo:
+            messagebox.showwarning("No repo", "No repo loaded yet."); return
+        # Put default message in the box so _do_commit picks it up
+        if not self._msg.get().strip():
+            self._msg.insert(0, "new commit")
+        self._do_commit()
+        self._do_push()
 
     # ── Push ──────────────────────────────────
 
