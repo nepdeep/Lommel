@@ -411,10 +411,18 @@ class BackupGUI(tk.Tk):
 
         backup_actions = ttk.Frame(self.backup_tab, style="Card.TFrame")
         backup_actions.grid(row=4, column=0, sticky="ew", pady=(12, 0))
-        ttk.Button(backup_actions, text="Backup Selected", style="Accent.TButton", command=self.backup_selected_file).grid(row=0, column=0, sticky="w")
-        ttk.Button(backup_actions, text="Backup All Listed", style="Secondary.TButton", command=self.backup_all_visible).grid(row=0, column=1, sticky="w", padx=(10, 0))
-        ttk.Button(backup_actions, text="Backup Selected & Close", style="Danger.TButton", command=self.backup_selected_and_close).grid(row=0, column=2, sticky="w", padx=(10, 0))
-        ttk.Button(backup_actions, text="Close", style="Danger.TButton", command=self.destroy).grid(row=0, column=3, sticky="w", padx=(10, 0))
+
+        ttk.Button(backup_actions, text="Backup Selected", style="Accent.TButton", command=self.backup_selected_file).grid(row=0, column=0, sticky="ew")
+        ttk.Label(backup_actions, text="Double-click", style="Muted.TLabel", anchor="center").grid(row=1, column=0, sticky="ew")
+
+        ttk.Button(backup_actions, text="Backup All Listed", style="Secondary.TButton", command=self.backup_all_visible).grid(row=0, column=1, sticky="ew", padx=(10, 0))
+        ttk.Label(backup_actions, text="", style="Muted.TLabel", anchor="center").grid(row=1, column=1, sticky="ew", padx=(10, 0))
+
+        ttk.Button(backup_actions, text="Backup Selected & Close", style="Danger.TButton", command=self.backup_selected_and_close).grid(row=0, column=2, sticky="ew", padx=(10, 0))
+        ttk.Label(backup_actions, text="Ctrl+B", style="Muted.TLabel", anchor="center").grid(row=1, column=2, sticky="ew", padx=(10, 0))
+
+        ttk.Button(backup_actions, text="Close", style="Danger.TButton", command=self.destroy).grid(row=0, column=3, sticky="ew", padx=(10, 0))
+        ttk.Label(backup_actions, text="Ctrl+X", style="Muted.TLabel", anchor="center").grid(row=1, column=3, sticky="ew", padx=(10, 0))
 
     def _build_restore_tab(self):
         self.restore_tab.columnconfigure(0, weight=1)
