@@ -219,10 +219,7 @@ class BackupGUI(tk.Tk):
         self._setup_style()
         self._build_ui()
         self.refresh_all()
-        self.bind_all("<Control-b>", lambda event: self.backup_selected_and_close())
-        self.bind_all("<Control-h>", lambda event: self._set_type_filter("html"))
-        self.bind_all("<Control-p>", lambda event: self._set_type_filter("py"))
-        self.bind_all("<Control-x>", lambda event: self.destroy())
+        self._bind_shortcuts()
         def _focus_and_select():
             self.description_entry.focus_set()
             self.description_entry.select_range(0, "end")
@@ -306,6 +303,8 @@ class BackupGUI(tk.Tk):
     def _build_ui(self):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(2, weight=1)
+        self.rowconfigure(3, weight=0)
+        self.rowconfigure(4, weight=0)
 
         header = ttk.Frame(self, style="App.TFrame", padding=(18, 16, 18, 8))
         header.grid(row=0, column=0, sticky="ew")
@@ -365,8 +364,25 @@ class BackupGUI(tk.Tk):
         self._build_backup_tab()
         self._build_restore_tab()
 
+        # --- Persistent action bar (always visible, outside notebook) ---
+        action_bar = ttk.Frame(self, style="Card.TFrame", padding=(18, 10, 18, 10))
+        action_bar.grid(row=3, column=0, sticky="ew", padx=18, pady=(0, 6))
+
+        ttk.Button(action_bar, text="Backup Selected", style="Accent.TButton", command=self.backup_selected_file).grid(row=0, column=0, sticky="ew")
+        ttk.Label(action_bar, text="Double-click", style="Muted.TLabel", anchor="center").grid(row=1, column=0, sticky="ew")
+
+        ttk.Button(action_bar, text="Backup All Listed", style="Secondary.TButton", command=self.backup_all_visible).grid(row=0, column=1, sticky="ew", padx=(10, 0))
+        ttk.Label(action_bar, text="", style="Muted.TLabel", anchor="center").grid(row=1, column=1, sticky="ew", padx=(10, 0))
+
+        ttk.Button(action_bar, text="Backup Selected & Close", style="Danger.TButton", command=self.backup_selected_and_close).grid(row=0, column=2, sticky="ew", padx=(10, 0))
+        ttk.Label(action_bar, text="Ctrl+B", style="Muted.TLabel", anchor="center").grid(row=1, column=2, sticky="ew", padx=(10, 0))
+
+        ttk.Button(action_bar, text="Close", style="Danger.TButton", command=self.destroy).grid(row=0, column=3, sticky="ew", padx=(10, 0))
+        ttk.Label(action_bar, text="Ctrl+X", style="Muted.TLabel", anchor="center").grid(row=1, column=3, sticky="ew", padx=(10, 0))
+
+        # --- Status bar ---
         status = ttk.Frame(self, style="App.TFrame", padding=(18, 0, 18, 14))
-        status.grid(row=3, column=0, sticky="ew")
+        status.grid(row=4, column=0, sticky="ew")
         status.columnconfigure(0, weight=1)
         ttk.Label(status, textvariable=self.status_var, style="Muted.TLabel").grid(row=0, column=0, sticky="w")
 
@@ -409,20 +425,7 @@ class BackupGUI(tk.Tk):
         backup_scroll.grid(row=0, column=1, sticky="ns")
         self.backup_tree.configure(yscrollcommand=backup_scroll.set)
 
-        backup_actions = ttk.Frame(self.backup_tab, style="Card.TFrame")
-        backup_actions.grid(row=4, column=0, sticky="ew", pady=(12, 0))
 
-        ttk.Button(backup_actions, text="Backup Selected", style="Accent.TButton", command=self.backup_selected_file).grid(row=0, column=0, sticky="ew")
-        ttk.Label(backup_actions, text="Double-click", style="Muted.TLabel", anchor="center").grid(row=1, column=0, sticky="ew")
-
-        ttk.Button(backup_actions, text="Backup All Listed", style="Secondary.TButton", command=self.backup_all_visible).grid(row=0, column=1, sticky="ew", padx=(10, 0))
-        ttk.Label(backup_actions, text="", style="Muted.TLabel", anchor="center").grid(row=1, column=1, sticky="ew", padx=(10, 0))
-
-        ttk.Button(backup_actions, text="Backup Selected & Close", style="Danger.TButton", command=self.backup_selected_and_close).grid(row=0, column=2, sticky="ew", padx=(10, 0))
-        ttk.Label(backup_actions, text="Ctrl+B", style="Muted.TLabel", anchor="center").grid(row=1, column=2, sticky="ew", padx=(10, 0))
-
-        ttk.Button(backup_actions, text="Close", style="Danger.TButton", command=self.destroy).grid(row=0, column=3, sticky="ew", padx=(10, 0))
-        ttk.Label(backup_actions, text="Ctrl+X", style="Muted.TLabel", anchor="center").grid(row=1, column=3, sticky="ew", padx=(10, 0))
 
     def _build_restore_tab(self):
         self.restore_tab.columnconfigure(0, weight=1)
@@ -478,6 +481,47 @@ class BackupGUI(tk.Tk):
         self.selected_type.set(file_type)
         self.refresh_all()
 
+    def _bind_shortcuts(self):
+        """Bind global shortcuts so they work regardless of which widget has focus.
+
+        bind_all() registers on the lowest-priority 'all' tag, meaning widget-level
+        default bindings (e.g. Ctrl+X = cut in Entry, Ctrl+H = backspace) fire first
+        and can swallow or conflict with the intended shortcut.  We therefore also
+        bind each shortcut directly on every interactive widget, returning 'break' to
+        suppress that widget's own default behaviour.
+        """
+        shortcuts = [
+            ("<Control-b>", lambda e: self._shortcut_backup_and_close()),
+            ("<Control-B>", lambda e: self._shortcut_backup_and_close()),
+            ("<Control-h>", lambda e: self._shortcut_filter("html")),
+            ("<Control-H>", lambda e: self._shortcut_filter("html")),
+            ("<Control-p>", lambda e: self._shortcut_filter("py")),
+            ("<Control-P>", lambda e: self._shortcut_filter("py")),
+            ("<Control-x>", lambda e: self._shortcut_close()),
+            ("<Control-X>", lambda e: self._shortcut_close()),
+        ]
+
+        # Low-priority catch-all (covers widgets not listed below)
+        for key, handler in shortcuts:
+            self.bind_all(key, handler)
+
+        # High-priority widget-level bindings that return "break" so the widget's
+        # own default key handler (cut, backspace, etc.) does NOT also fire.
+        for widget in (self.description_entry, self.backup_tree, self.restore_tree):
+            for key, handler in shortcuts:
+                widget.bind(key, lambda e, h=handler: (h(e), "break")[1])
+
+    # ------------------------------------------------------------------ #
+    # Shortcut helpers – thin wrappers so lambdas stay one-liners above   #
+    # ------------------------------------------------------------------ #
+    def _shortcut_backup_and_close(self):
+        self.backup_selected_and_close()
+
+    def _shortcut_filter(self, file_type):
+        self._set_type_filter(file_type)
+
+    def _shortcut_close(self):
+        self.destroy()
 
     def apply_folder_from_entry(self):
         selected = self.root_dir_var.get().strip()

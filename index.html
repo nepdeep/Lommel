@@ -650,9 +650,8 @@ input[type=range]::-moz-range-thumb {
       <div id="invest-popup" class="tt-popup" style="top:calc(100% + 8px);bottom:auto;right:0;left:auto;transform:none;min-width:220px;">
         <div class="tt-title">How it's calculated</div>
         <table style="width:100%;border-collapse:collapse;">
-          <tr class="bp-row"><td class="bp-label">Selling price</td><td class="bp-amt" id="ip-sell">—</td></tr>
-          <tr class="bp-row"><td class="bp-label">− Belgium total cost</td><td class="bp-amt" id="ip-belgcost">—</td></tr>
-          <tr class="bp-row" id="ip-carry-row"><td class="bp-label">+ Carried mortgage</td><td class="bp-amt" id="ip-carry">—</td></tr>
+          <tr class="bp-row"><td class="bp-label">Profit (sell − mortgage)</td><td class="bp-amt" id="ip-sell">—</td></tr>
+          <tr class="bp-row"><td class="bp-label">− Add. cost (Belgium − mortgage)</td><td class="bp-amt" id="ip-belgcost">—</td></tr>
           <tr style="border-top:1px solid rgba(255,255,255,0.1);">
             <td style="padding:6px 4px 2px;font-size:11px;font-weight:600;color:#6ee7a8;font-family:var(--mono);">= Remaining</td>
             <td style="padding:6px 4px 2px;font-size:13px;font-weight:600;color:#6ee7a8;font-family:var(--mono);text-align:right;" id="ip-remain">—</td>
@@ -1453,7 +1452,9 @@ input[type=range]::-moz-range-thumb {
       ? Math.max(0, belgTotal - carriedAmount)
       : Math.max(0, belgTotal - equity);
     const totalBorrow   = carriedAmount + newLoan;
-    const cashLeft      = carryOver ? equity : equity - belgTotal;
+    // REMAINING FOR INVESTMENT = profit (sell - mortgage) - additional cost (belgTotal - mortgage)
+    // = sell - mortgage - belgTotal + mortgage = sell - belgTotal
+    const cashLeft      = sell - belgTotal;
 
     cashBalance = Math.max(0, cashLeft);
 
@@ -1474,16 +1475,11 @@ input[type=range]::-moz-range-thumb {
     document.getElementById('bp-total').textContent    = fmt(belgTotal);
 
     // Sync invest popup
-    document.getElementById('ip-sell').textContent     = fmt(sell);
-    document.getElementById('ip-belgcost').textContent = fmt(belgTotal);
+    const profit       = sell - mortgage;
+    const additionalCost = belgTotal - mortgage;
+    document.getElementById('ip-sell').textContent     = fmt(profit);
+    document.getElementById('ip-belgcost').textContent = fmt(additionalCost);
     document.getElementById('ip-remain').textContent   = fmt(cashBalance);
-    const ipCarryRow = document.getElementById('ip-carry-row');
-    if (carryOver && carriedAmount > 0) {
-      ipCarryRow.style.display = 'table-row';
-      document.getElementById('ip-carry').textContent = fmt(carriedAmount);
-    } else {
-      ipCarryRow.style.display = 'none';
-    }
 
     // Sync summary card tooltips
     document.getElementById('eq-sell').textContent = fmt(sell);
