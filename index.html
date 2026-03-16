@@ -52,6 +52,29 @@ body {
 }
 .top-bar span { font-size: 11px; color: var(--faint); }
 
+/* ── Section collapse headers ── */
+.sec-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 5px 0 8px; cursor: pointer; user-select: none;
+  gap: 8px;
+}
+.sec-hdr-title {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); flex: 1;
+}
+.sec-chevron {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 5px; flex-shrink: 0;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--muted); cursor: pointer; transition: all 0.15s;
+  line-height: 1;
+}
+.sec-hdr:hover .sec-chevron { background: var(--border); color: var(--text); }
+.sec-chevron svg { transition: transform 0.2s; display: block; }
+.sec-hdr.collapsed .sec-chevron svg { transform: rotate(-90deg); }
+.sec-body { }
+.sec-body.collapsed { display: none; }
+
 /* ── Hero strip ── */
 .hero {
   display: grid; grid-template-columns: 1fr auto 1fr auto 1fr;
@@ -251,8 +274,8 @@ input[type=range]::-moz-range-thumb {
 .bk-computed { font-family: var(--mono); font-size: 12px; color: var(--muted); }
 .bk-hint { font-size: 9px; color: var(--faint); margin-top: 1px; }
 
+
 .section-sep {
-  font-size: 9px; font-weight: 600; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--faint);
   padding: 8px 0 4px; display: block;
 }
@@ -283,21 +306,6 @@ input[type=range]::-moz-range-thumb {
 
 /* ── Invest section ── */
 #invest-section { margin-top: 1.5rem; scroll-margin-top: 1rem; }
-
-.invest-top {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 10px; flex-wrap: wrap; gap: 6px;
-}
-.invest-top h2 {
-  font-size: 12px; font-weight: 600; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--text);
-}
-.invest-top .avail-pill {
-  font-size: 11px; font-family: var(--mono);
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 20px; padding: 3px 12px; color: var(--muted);
-}
-.invest-top .avail-pill strong { color: var(--pos); }
 
 .asset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
 
@@ -385,16 +393,6 @@ input[type=range]::-moz-range-thumb {
 .legend-item .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .legend-item.hidden-series { opacity: 0.3; text-decoration: line-through; }
 
-/* cta */
-.invest-cta-wrap { text-align: center; margin: 12px 0; }
-.invest-cta {
-  display: inline-flex; align-items: center; gap: 7px;
-  background: var(--text); color: rgba(255,255,255,0.85);
-  border: none; border-radius: 6px; padding: 9px 22px;
-  font-size: 12px; font-weight: 500; font-family: var(--sans);
-  cursor: pointer; transition: opacity 0.15s;
-}
-.invest-cta:hover { opacity: 0.8; }
 
 /* ── Shared tooltip popups ── */
 .tt-popup {
@@ -447,6 +445,57 @@ input[type=range]::-moz-range-thumb {
 .disclaimer {
   font-size: 10px; color: var(--faint); line-height: 1.7;
   text-align: center; margin-top: 1.5rem;
+}
+
+/* ── Scenario buttons ── */
+.scenario-bar {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 10px; flex-wrap: wrap;
+}
+.scenario-bar .sc-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--faint); margin-right: 4px;
+}
+.sc-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 30px; padding: 0 13px;
+  border-radius: 6px; border: 1.5px solid transparent;
+  font-size: 11px; font-weight: 600; font-family: var(--sans);
+  letter-spacing: 0.03em; cursor: pointer;
+  transition: all 0.15s; white-space: nowrap;
+}
+.sc-btn .sc-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+}
+.sc-btn.best {
+  background: #e6f4ec; border-color: #7ec9a0; color: #1a5c38;
+}
+.sc-btn.best:hover { background: #d0ecdc; border-color: #4aaa78; }
+.sc-btn.best.active { background: #1a5c38; color: #fff; border-color: #1a5c38; }
+.sc-btn.best .sc-dot { background: #2a8c58; }
+.sc-btn.best.active .sc-dot { background: #6ee7a8; }
+.sc-btn.normal {
+  background: #fef9ec; border-color: #e8c96a; color: #7a5a00;
+}
+.sc-btn.normal:hover { background: #fdf0c4; border-color: #c9a030; }
+.sc-btn.normal.active { background: #b88000; color: #fff; border-color: #b88000; }
+.sc-btn.normal .sc-dot { background: #c9a030; }
+.sc-btn.normal.active .sc-dot { background: #ffe89a; }
+.sc-btn.worst {
+  background: #fdf0ee; border-color: #e8a89e; color: #8c2318;
+}
+.sc-btn.worst:hover { background: #fae0dc; border-color: #c9524a; }
+.sc-btn.worst.active { background: #b83226; color: #fff; border-color: #b83226; }
+.sc-btn.worst .sc-dot { background: #c9524a; }
+.sc-btn.worst.active .sc-dot { background: #ffb3ab; }
+.sc-btn.reset {
+  background: var(--surface2); border-color: var(--border-strong); color: var(--muted);
+}
+.sc-btn.reset:hover { background: var(--border); color: var(--text); }
+.sc-values {
+  font-size: 10px; color: var(--faint); font-family: var(--mono);
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 5px; padding: 3px 9px; white-space: nowrap;
 }
 
 .badge {
@@ -513,11 +562,7 @@ input[type=range]::-moz-range-thumb {
   /* Carry box */
   .carry-box { padding: 8px 10px; }
 
-  /* CTA button */
-  .invest-cta { width: 100%; justify-content: center; font-size: 12px; }
-
   /* Invest section */
-  .invest-top { flex-direction: column; align-items: flex-start; gap: 6px; }
   .avail-pill { font-size: 11px; }
 
   /* Asset cards */
@@ -607,6 +652,24 @@ input[type=range]::-moz-range-thumb {
     <span>Selling price → purchase cost → remaining cash</span>
   </div>
 
+  <!-- Scenario buttons -->
+  <div class="scenario-bar">
+    <span class="sc-label">Scenario</span>
+    <button class="sc-btn best" id="btn-best" onclick="applyScenario('best')">
+      <span class="sc-dot"></span>Best
+    </button>
+    <button class="sc-btn normal" id="btn-normal" onclick="applyScenario('normal')">
+      <span class="sc-dot"></span>Normal
+    </button>
+    <button class="sc-btn worst" id="btn-worst" onclick="applyScenario('worst')">
+      <span class="sc-dot"></span>Worst
+    </button>
+    <button class="sc-btn reset" id="btn-reset" onclick="applyScenario('reset')" style="display:none;">
+      ↺ Reset
+    </button>
+    <span class="sc-values" id="sc-hint" style="display:none;"></span>
+  </div>
+
   <!-- Hero strip: the 3 key numbers -->
   <div class="hero">
     <div class="hero-cell sell">
@@ -662,13 +725,17 @@ input[type=range]::-moz-range-thumb {
     </div>
   </div>
 
-  <!-- Main two-column grid -->
-  <div class="grid-main">
+  <!-- Inputs row: two cards side by side -->
+  <div id="section-inputs">
+    <div class="sec-hdr" style="cursor:default;">
+      <span class="sec-hdr-title">Inputs</span>
+    </div>
+    <div class="sec-body" id="body-inputs">
+      <div class="grid-main">
 
-    <!-- LEFT: Inputs -->
-    <div class="col">
-      <div class="card">
-        <p class="card-title">Current property</p>
+        <!-- Current property -->
+        <div class="card">
+          <p class="card-title">Current property</p>
         <div class="input-row">
           <div class="field">
             <label>Outstanding mortgage (€)</label>
@@ -680,7 +747,7 @@ input[type=range]::-moz-range-thumb {
           <div class="field">
             <label>Expected selling price (€)</label>
             <div class="input-wrap">
-              <input type="number" id="sellingPrice" value="680" min="0" step="1">
+              <input type="number" id="sellingPrice" value="650" min="0" step="1">
               <span class="sfx">k</span>
             </div>
           </div>
@@ -696,8 +763,9 @@ input[type=range]::-moz-range-thumb {
         </div>
       </div>
 
-      <div class="card">
-        <p class="card-title">Belgian property</p>
+        <!-- Belgian property -->
+        <div class="card">
+          <p class="card-title">Belgian property</p>
         <div class="input-row">
           <div class="field">
             <label>Listed price (€)</label>
@@ -715,29 +783,6 @@ input[type=range]::-moz-range-thumb {
                 <option value="brussels">Brussels (12.5%)</option>
                 <option value="wallonia">Wallonia (12.5%)</option>
               </select>
-            </div>
-          </div>
-        </div>
-        <div class="input-row" style="margin-top:4px;">
-          <div class="field">
-            <label>Hypotheekadvies kosten (€) <span style="font-size:9px;color:var(--faint);font-weight:400;">broker/advisor fee</span></label>
-            <div class="input-wrap">
-              <input type="number" id="mortgageAdvice" value="1500" min="0" step="100">
-            </div>
-          </div>
-          <div class="field">
-            <label>Notary fees <span style="font-size:9px;color:var(--faint);font-weight:400;">worst case 1.5%</span></label>
-            <div class="input-wrap">
-              <input type="number" id="notaryPct" value="1.5" min="0.5" max="3" step="0.1">
-              <span class="sfx">%</span>
-            </div>
-          </div>
-        </div>
-        <div class="input-row" style="margin-top:4px;">
-          <div class="field">
-            <label>Admin &amp; misc. (€) <span style="font-size:9px;color:var(--faint);font-weight:400;">worst case €3,000</span></label>
-            <div class="input-wrap">
-              <input type="number" id="adminMisc" value="3000" min="0" step="100">
             </div>
           </div>
         </div>
@@ -761,44 +806,17 @@ input[type=range]::-moz-range-thumb {
         </div>
       </div>
 
-      <div class="card">
-        <p class="card-title">Additional costs</p>
-        <div class="input-row">
-          <div class="field">
-            <label>Hypotheekakte notaris (€) <span style="font-size:9px;color:var(--faint);font-weight:400;">mortgage deed</span></label>
-            <div class="input-wrap"><input type="number" id="mortgageDeed" value="3000" min="0" step="100"></div>
-          </div>
-          <div class="field">
-            <label>Bankdossierkosten (€) <span style="font-size:9px;color:var(--faint);font-weight:400;">file fee</span></label>
-            <div class="input-wrap"><input type="number" id="bankFee" value="750" min="0" step="50"></div>
-          </div>
-        </div>
-        <div class="input-row">
-          <div class="field">
-            <label>Schuldsaldoverzekering (€) <span style="font-size:9px;color:var(--faint);font-weight:400;">life insurance lump sum</span></label>
-            <div class="input-wrap"><input type="number" id="ssv" value="8000" min="0" step="500"></div>
-          </div>
-          <div class="field">
-            <label>Brandverzekering jaar 1 (€) <span style="font-size:9px;color:var(--faint);font-weight:400;">fire insurance</span></label>
-            <div class="input-wrap"><input type="number" id="fireInsurance" value="700" min="0" step="50"></div>
-          </div>
-        </div>
-        <div class="input-row">
-          <div class="field">
-            <label>Bouwkundige keuring (€) <span style="font-size:9px;color:var(--faint);font-weight:400;">structural inspection</span></label>
-            <div class="input-wrap"><input type="number" id="inspection" value="800" min="0" step="50"></div>
-          </div>
-          <div class="field">
-            <label>Verhuiskosten (€) <span style="font-size:9px;color:var(--faint);font-weight:400;">moving costs NL→BE</span></label>
-            <div class="input-wrap"><input type="number" id="moving" value="5000" min="0" step="100"></div>
-          </div>
-        </div>
-      </div>
 
-    </div><!-- end left col -->
+      </div><!-- end grid-main -->
+    </div><!-- end sec-body inputs -->
+  </div><!-- end section-inputs -->
 
-    <!-- RIGHT: Results -->
-    <div class="col">
+  <!-- Summary: full width below both input cards -->
+  <div id="section-summary" style="margin-top:10px;">
+    <div class="sec-hdr" style="cursor:default;">
+      <span class="sec-hdr-title">Summary</span>
+    </div>
+    <div class="sec-body" id="body-summary">
       <div class="card">
         <p class="card-title">Summary</p>
         <div class="metrics-row">
@@ -900,6 +918,17 @@ input[type=range]::-moz-range-thumb {
         </div>
       </div>
 
+    </div><!-- end sec-body summary -->
+  </div><!-- end section-summary -->
+
+  <!-- COST BREAKDOWN SECTION -->
+  <div id="section-costbreakdown" style="margin-top:1rem;">
+      <div class="sec-hdr collapsed" onclick="toggleSecCollapse(this)" data-body="body-costbreakdown">
+        <span class="sec-hdr-title">Cost breakdown</span>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--muted);font-weight:500;" id="bk-hdr-total">—</span>
+        <span class="sec-chevron"><svg width="10" height="10" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+      </div>
+      <div class="sec-body collapsed" id="body-costbreakdown">
       <div class="card">
         <p class="card-title">Cost breakdown <span style="font-size:9px;color:var(--faint);font-weight:400;letter-spacing:0;text-transform:none;">· click row to hide · edit amounts inline</span></p>
         <table class="bk-table" id="bk-acq-table">
@@ -927,21 +956,17 @@ input[type=range]::-moz-range-thumb {
           </tr>
         </table>
       </div>
-    </div>
-  </div>
-
-  <div class="invest-cta-wrap" style="margin-top:1.5rem;">
-    <button class="invest-cta" onclick="document.getElementById('invest-section').scrollIntoView({behavior:'smooth'})">
-      Explore investment potential ↓
-    </button>
-  </div>
+      </div><!-- end sec-body costbreakdown -->
+  </div><!-- end section-costbreakdown -->
 
   <!-- INVESTMENT SECTION -->
   <div id="invest-section" style="margin-top:1.5rem;">
-    <div class="invest-top">
-      <h2>Investment potential</h2>
-      <span class="avail-pill">Available: <strong id="inv-cash-pill">€0</strong></span>
+    <div class="sec-hdr collapsed" onclick="toggleSecCollapse(this)" data-body="body-invest">
+      <span class="sec-hdr-title">Investment potential</span>
+      <span class="avail-pill" style="font-size:11px;font-family:var(--mono);background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:2px 10px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;">Available: <strong id="inv-cash-pill" style="color:var(--pos);">€0</strong></span>
+      <span class="sec-chevron"><svg width="10" height="10" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
     </div>
+    <div class="sec-body collapsed" id="body-invest">
 
     <div class="asset-grid">
       <!-- Bitcoin -->
@@ -1136,12 +1161,17 @@ input[type=range]::-moz-range-thumb {
       </div>
     </div>
 
-    <!-- ─── MONTHLY COST BREAKDOWN ─── -->
-    <div id="monthly-section" style="margin-top:1.5rem;">
-      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
-        <h2 style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text);">Monthly cost breakdown</h2>
-        <span style="font-size:11px;color:var(--muted);">2 adults · 1 school-age child · 1 daycare child · click row to disable</span>
-      </div>
+    </div><!-- end sec-body invest -->
+  </div><!-- end invest-section -->
+
+  <!-- ─── MONTHLY COST BREAKDOWN ─── -->
+  <div id="monthly-section" style="margin-top:1.5rem;">
+    <div class="sec-hdr collapsed" onclick="toggleSecCollapse(this)" data-body="body-monthly">
+      <span class="sec-hdr-title">Monthly cost breakdown</span>
+      <span style="font-size:10px;color:var(--faint);font-weight:400;text-transform:none;letter-spacing:0;">2 adults · 1 school-age child · 1 daycare child · click row to disable</span>
+      <span class="sec-chevron"><svg width="10" height="10" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+    </div>
+    <div class="sec-body collapsed" id="body-monthly">
 
       <div class="card" style="padding:0;overflow:hidden;">
         <table id="monthly-cost-table" style="width:100%;border-collapse:collapse;">
@@ -1174,9 +1204,8 @@ input[type=range]::-moz-range-thumb {
           <p class="m-sub">All active rows incl. mortgage</p>
         </div>
       </div>
-    </div>
-
-  </div>
+    </div><!-- end sec-body monthly -->
+  </div><!-- end monthly-section -->
 
 </div>
 
@@ -1214,16 +1243,16 @@ input[type=range]::-moz-range-thumb {
   const BK_ROWS = [
     { id:'bk-listed',  label:'Listed price',                                     hint:'',                           fromCalc:true,  enabled:true },
     { id:'bk-reg',     label:'Registration tax',                                  hint:'',    tag:true,              fromCalc:true,  enabled:true },
-    { id:'bk-notary',  label:'Notary fees',                                       hint:'',    pct:true,              fromCalc:true,  enabled:true },
-    { id:'bk-advice',  label:'Hypotheekadvies (mortgage advice)',                 hint:'broker/advisor fee',         fromCalc:true,  enabled:true },
-    { id:'bk-admin',   label:'Admin &amp; misc.',                                  hint:'worst case €3,000',          fromCalc:true,  enabled:true },
+    { id:'bk-notary',  label:'Notary fees',                                       hint:'',    tag:false, pct:true, pctInput:true, fromCalc:true,  enabled:true },
+    { id:'bk-advice',  label:'Hypotheekadvies (mortgage advice)',                 hint:'broker/advisor fee',         fromCalc:false, amount:1500,  enabled:true },
+    { id:'bk-admin',   label:'Admin &amp; misc.',                                  hint:'worst case €3,000',          fromCalc:false, amount:3000,  enabled:true },
     { id:'bk-reno',    label:'Renovation budget',                                  hint:'editable estimate',          fromCalc:false, amount:20000, enabled:true },
-    { id:'bk-deed',    label:'Hypotheekakte notaris (mortgage deed)',              hint:'',                           fromCalc:true,  enabled:true },
-    { id:'bk-bank',    label:'Bankdossierkosten (bank file fee)',                  hint:'',                           fromCalc:true,  enabled:true },
-    { id:'bk-ssv',     label:'Schuldsaldoverzekering (life insurance)',            hint:'lump sum',                   fromCalc:true,  enabled:true },
-    { id:'bk-fire',    label:'Brandverzekering jaar 1 (fire insurance yr 1)',      hint:'',                           fromCalc:true,  enabled:true },
-    { id:'bk-inspect', label:'Bouwkundige keuring (structural inspection)',        hint:'',                           fromCalc:true,  enabled:true },
-    { id:'bk-moving',  label:'Verhuiskosten (moving costs)',                      hint:'NL→BE',                      fromCalc:true,  enabled:true },
+    { id:'bk-deed',    label:'Hypotheekakte notaris (mortgage deed)',              hint:'',                           fromCalc:false, amount:3000,  enabled:true },
+    { id:'bk-bank',    label:'Bankdossierkosten (bank file fee)',                  hint:'',                           fromCalc:false, amount:750,   enabled:true },
+    { id:'bk-ssv',     label:'Schuldsaldoverzekering (life insurance)',            hint:'lump sum',                   fromCalc:false, amount:8000,  enabled:true },
+    { id:'bk-fire',    label:'Brandverzekering jaar 1 (fire insurance yr 1)',      hint:'',                           fromCalc:false, amount:700,   enabled:true },
+    { id:'bk-inspect', label:'Bouwkundige keuring (structural inspection)',        hint:'',                           fromCalc:false, amount:800,   enabled:true },
+    { id:'bk-moving',  label:'Verhuiskosten (moving costs)',                      hint:'NL→BE',                      fromCalc:false, amount:5000,  enabled:true },
   ];
 
   function buildBkTable() {
@@ -1256,6 +1285,25 @@ input[type=range]::-moz-range-thumb {
         tr.querySelector('input').addEventListener('click', e => e.stopPropagation());
       }
       tbody.appendChild(tr);
+
+      // Inject the notary % input sub-row right after the notary row
+      if (row.pctInput) {
+        const subTr = document.createElement('tr');
+        subTr.id = 'bktr-notary-pct-row';
+        subTr.innerHTML = `
+          <td class="td-label" style="padding-left:28px;padding-top:3px;padding-bottom:6px;vertical-align:middle;">
+            <span style="font-size:10px;color:var(--faint);">Rate</span>
+          </td>
+          <td class="bk-amt-cell" style="padding-top:3px;padding-bottom:6px;">
+            <div style="display:inline-flex;align-items:center;gap:4px;justify-content:flex-end;width:100%;">
+              <input type="number" class="bk-input" id="notaryPct" value="1.5" min="0.5" max="3" step="0.1" style="max-width:70px;text-align:right;">
+              <span style="font-size:11px;font-family:var(--mono);color:var(--faint);">%</span>
+            </div>
+          </td>`;
+        subTr.querySelector('input').addEventListener('input', () => calc());
+        subTr.querySelector('input').addEventListener('click', e => e.stopPropagation());
+        tbody.appendChild(subTr);
+      }
     });
   }
 
@@ -1277,6 +1325,17 @@ input[type=range]::-moz-range-thumb {
   function recalcBkTotal() {
     const total = getAcqTotal();
     document.getElementById('b-total-row').textContent = '€' + Math.round(total).toLocaleString('de-DE');
+    const hdrTotal = document.getElementById('bk-hdr-total');
+    if (hdrTotal) {
+      // listed price comes from bk-listed computed span
+      const listedEl = document.getElementById('bk-listed');
+      const listedRow = BK_ROWS.find(r => r.id === 'bk-listed');
+      const listed = listedRow ? (listedRow._calcValue || 0) : 0;
+      const extras = total - listed;
+      hdrTotal.textContent = listed > 0
+        ? fmt(listed) + ' + ' + fmt(extras)
+        : fmt(total);
+    }
   }
 
   // ── Monthly cost table ──
@@ -1404,28 +1463,20 @@ input[type=range]::-moz-range-thumb {
     const regAmount     = listed * taxRate;
     const notaryPct     = (parseFloat(document.getElementById('notaryPct').value) || 1.5) / 100;
     const notary        = listed * notaryPct;
-    const adviceFee     = parseFloat(document.getElementById('mortgageAdvice').value) || 0;
-    const adminMisc     = parseFloat(document.getElementById('adminMisc').value) || 0;
-    const mortgageDeed  = parseFloat(document.getElementById('mortgageDeed').value) || 0;
-    const bankFee       = parseFloat(document.getElementById('bankFee').value) || 0;
-    const ssv           = parseFloat(document.getElementById('ssv').value) || 0;
-    const fireInsurance = parseFloat(document.getElementById('fireInsurance').value) || 0;
-    const inspection    = parseFloat(document.getElementById('inspection').value) || 0;
-    const moving        = parseFloat(document.getElementById('moving').value) || 0;
+    const adviceFee     = parseFloat((document.getElementById('bk-advice') || {}).value) || 0;
+    const adminMisc     = parseFloat((document.getElementById('bk-admin')  || {}).value) || 0;
+    const mortgageDeed  = parseFloat((document.getElementById('bk-deed')    || {}).value) || 0;
+    const bankFee       = parseFloat((document.getElementById('bk-bank')    || {}).value) || 0;
+    const ssv           = parseFloat((document.getElementById('bk-ssv')     || {}).value) || 0;
+    const fireInsurance = parseFloat((document.getElementById('bk-fire')    || {}).value) || 0;
+    const inspection    = parseFloat((document.getElementById('bk-inspect') || {}).value) || 0;
+    const moving        = parseFloat((document.getElementById('bk-moving')  || {}).value) || 0;
 
-    // Feed computed values into BK_ROWS
+    // Feed computed values into BK_ROWS (only truly calc'd rows remain)
     const bkCalcMap = {
       'bk-listed':  listed,
       'bk-reg':     listed * taxRate,
       'bk-notary':  notary,
-      'bk-advice':  adviceFee,
-      'bk-admin':   adminMisc,
-      'bk-deed':    mortgageDeed,
-      'bk-bank':    bankFee,
-      'bk-ssv':     ssv,
-      'bk-fire':    fireInsurance,
-      'bk-inspect': inspection,
-      'bk-moving':  moving,
     };
     BK_ROWS.forEach(row => {
       if (row.fromCalc && bkCalcMap[row.id] !== undefined) {
@@ -1705,8 +1756,7 @@ input[type=range]::-moz-range-thumb {
     if (el) el.classList.toggle('hidden-series', meta.hidden);
   }
 
-  ['currentMortgage','sellingPrice','belgiumPrice','region','mortgageAdvice','notaryPct','adminMisc',
-   'mortgageDeed','bankFee','ssv','fireInsurance','inspection','moving'].forEach(id =>
+  ['currentMortgage','sellingPrice','belgiumPrice','region'].forEach(id =>
     document.getElementById(id).addEventListener('input', calc));
   document.getElementById('rate').addEventListener('input', calc);
   document.getElementById('term').addEventListener('input', calc);
@@ -1720,6 +1770,69 @@ input[type=range]::-moz-range-thumb {
   buildBkTable();
   buildMonthlyTable();
   calc();
+
+  // ── Scenario presets ──
+  let _scenarioOriginals = null;
+
+  function applyScenario(mode) {
+    const sellEl = document.getElementById('sellingPrice');
+    const mortEl = document.getElementById('newMortgage');
+
+    // Capture originals once
+    if (!_scenarioOriginals) {
+      _scenarioOriginals = {
+        sell: sellEl.value,
+        mort: mortEl.value
+      };
+    }
+
+    const scenarios = {
+      best:   { sell: 680, mort: 500 },
+      normal: { sell: 660, mort: 450 },
+      worst:  { sell: 640, mort: 400 }
+    };
+
+    // Toggle off if already active
+    const isSame = document.getElementById('btn-' + mode)?.classList.contains('active');
+
+    // Reset all btn states
+    ['best','normal','worst'].forEach(s => {
+      const b = document.getElementById('btn-' + s);
+      if (b) b.classList.remove('active');
+    });
+
+    const resetBtn = document.getElementById('btn-reset');
+    const hint = document.getElementById('sc-hint');
+
+    if (isSame || mode === 'reset') {
+      // Restore originals
+      sellEl.value = _scenarioOriginals.sell;
+      mortEl.value = _scenarioOriginals.mort;
+      _scenarioOriginals = null;
+      resetBtn.style.display = 'none';
+      hint.style.display = 'none';
+    } else {
+      const sc = scenarios[mode];
+      sellEl.value = sc.sell;
+      mortEl.value = sc.mort;
+      document.getElementById('btn-' + mode).classList.add('active');
+      resetBtn.style.display = '';
+      hint.style.display = '';
+      hint.textContent = 'sell ' + fmt(sc.sell * 1000) + ' · mortgage ' + fmt(sc.mort * 1000);
+    }
+
+    calc();
+  }
+
+  // ── Section collapse / expand ──
+  function toggleSecCollapse(hdr) {
+    const bodyId = hdr.dataset.body;
+    const body = document.getElementById(bodyId);
+    if (!body) return;
+    const isCollapsed = body.classList.contains('collapsed');
+    body.classList.toggle('collapsed', !isCollapsed);
+    hdr.classList.toggle('collapsed', !isCollapsed);
+  }
 </script>
 </body>
 </html>
