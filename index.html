@@ -651,7 +651,7 @@ input[type=range]::-moz-range-thumb {
         <div class="tt-title">How it's calculated</div>
         <table style="width:100%;border-collapse:collapse;">
           <tr class="bp-row"><td class="bp-label">Profit (sell − mortgage)</td><td class="bp-amt" id="ip-sell">—</td></tr>
-          <tr class="bp-row"><td class="bp-label">− Add. cost (Belgium − mortgage)</td><td class="bp-amt" id="ip-belgcost">—</td></tr>
+          <tr class="bp-row"><td class="bp-label">− Add. cost (Belgium − new mortgage)</td><td class="bp-amt" id="ip-belgcost">—</td></tr>
           <tr style="border-top:1px solid rgba(255,255,255,0.1);">
             <td style="padding:6px 4px 2px;font-size:11px;font-weight:600;color:#6ee7a8;font-family:var(--mono);">= Remaining</td>
             <td style="padding:6px 4px 2px;font-size:13px;font-weight:600;color:#6ee7a8;font-family:var(--mono);text-align:right;" id="ip-remain">—</td>
@@ -685,11 +685,13 @@ input[type=range]::-moz-range-thumb {
             </div>
           </div>
         </div>
-        <div class="carry-box">
-          <input type="checkbox" id="carryOver" checked>
-          <div>
-            <label for="carryOver">Carry over mortgage to Belgian property</label>
-            <p class="carry-sub">Transfer balance to avoid early repayment penalties</p>
+        <div class="input-row" style="margin-top:8px;">
+          <div class="field">
+            <label>New mortgage (€)</label>
+            <div class="input-wrap">
+              <input type="number" id="newMortgage" value="450" min="0" step="1">
+              <span class="sfx">k</span>
+            </div>
           </div>
         </div>
       </div>
@@ -857,9 +859,9 @@ input[type=range]::-moz-range-thumb {
             <div id="cl-popup" class="tt-popup tt-light">
               <div class="tt-title" style="color:var(--faint);">How it's calculated</div>
               <table style="width:100%;border-collapse:collapse;">
-                <tr class="bp-row lp"><td class="bp-label lp">Selling price</td><td class="bp-amt lp" id="cl-sell">—</td></tr>
+                <tr class="bp-row lp"><td class="bp-label lp">Net profit (sell − mortgage)</td><td class="bp-amt lp" id="cl-sell">—</td></tr>
                 <tr class="bp-row lp"><td class="bp-label lp">− Belgium total cost</td><td class="bp-amt lp" id="cl-belgcost">—</td></tr>
-                <tr class="bp-row lp" id="cl-carry-row"><td class="bp-label lp">+ Carried mortgage</td><td class="bp-amt lp" id="cl-carry">—</td></tr>
+                <tr class="bp-row lp" id="cl-carry-row"><td class="bp-label lp">+ New mortgage</td><td class="bp-amt lp" id="cl-carry">—</td></tr>
                 <tr style="border-top:1px solid var(--border);">
                   <td style="padding:6px 4px 2px;font-size:11px;font-weight:600;font-family:var(--mono);color:var(--pos);">= Cash left</td>
                   <td style="padding:6px 4px 2px;font-size:13px;font-weight:600;font-family:var(--mono);text-align:right;color:var(--pos);" id="cl-result">—</td>
@@ -1398,8 +1400,6 @@ input[type=range]::-moz-range-thumb {
     const rate      = parseFloat(document.getElementById('rate').value);
     const term      = parseInt(document.getElementById('term').value);
     const region    = document.getElementById('region').value;
-    const carryOver = document.getElementById('carryOver').checked;
-
     const taxRate   = regTax[region];
     const regAmount     = listed * taxRate;
     const notaryPct     = (parseFloat(document.getElementById('notaryPct').value) || 1.5) / 100;
@@ -1444,17 +1444,10 @@ input[type=range]::-moz-range-thumb {
     recalcBkTotal();
 
     const equity        = sell - mortgage;
-    const carriedAmount = carryOver ? Math.min(mortgage, belgTotal) : 0;
-    // When carrying over: new loan covers the gap between belgTotal and carry-over.
-    // Equity from the sale stays as free cash — it does NOT reduce the new loan.
-    // Without carry-over: one new mortgage for the full belgTotal, minus equity down payment.
-    const newLoan       = carryOver
-      ? Math.max(0, belgTotal - carriedAmount)
-      : Math.max(0, belgTotal - equity);
-    const totalBorrow   = carriedAmount + newLoan;
-    // REMAINING FOR INVESTMENT = profit (sell - mortgage) - additional cost (belgTotal - mortgage)
-    // = sell - mortgage - belgTotal + mortgage = sell - belgTotal
-    const cashLeft      = sell - belgTotal;
+    const newMortgage   = (parseFloat(document.getElementById('newMortgage').value) || 0) * 1000;
+    const totalBorrow   = newMortgage;
+    // REMAINING FOR INVESTMENT = (sell - outstanding mortgage) - (belgium cost - new mortgage)
+    const cashLeft      = equity - (belgTotal - newMortgage);
 
     cashBalance = Math.max(0, cashLeft);
 
@@ -1475,8 +1468,8 @@ input[type=range]::-moz-range-thumb {
     document.getElementById('bp-total').textContent    = fmt(belgTotal);
 
     // Sync invest popup
-    const profit       = sell - mortgage;
-    const additionalCost = belgTotal - mortgage;
+    const profit         = sell - mortgage;
+    const additionalCost = belgTotal - newMortgage;
     document.getElementById('ip-sell').textContent     = fmt(profit);
     document.getElementById('ip-belgcost').textContent = fmt(additionalCost);
     document.getElementById('ip-remain').textContent   = fmt(cashBalance);
@@ -1501,15 +1494,14 @@ input[type=range]::-moz-range-thumb {
     document.getElementById('bt-tag').textContent        = regLabel[region];
     document.getElementById('bt-total').textContent      = fmt(belgTotal);
 
-    document.getElementById('cl-sell').textContent     = fmt(sell);
+    document.getElementById('cl-sell').textContent     = fmt(equity);
     document.getElementById('cl-belgcost').textContent = fmt(belgTotal);
-    document.getElementById('cl-result').textContent   = fmt(cashLeft);
-    const clCarryRow = document.getElementById('cl-carry-row');
-    if (carryOver && carriedAmount > 0) {
-      clCarryRow.style.display = 'table-row';
-      document.getElementById('cl-carry').textContent = fmt(carriedAmount);
+    document.getElementById('cl-result').textContent   = fmt(cashBalance);
+    if (newMortgage > 0) {
+      document.getElementById('cl-carry-row').style.display = 'table-row';
+      document.getElementById('cl-carry').textContent = fmt(newMortgage);
     } else {
-      clCarryRow.style.display = 'none';
+      document.getElementById('cl-carry-row').style.display = 'none';
     }
 
     // Hero strip
@@ -1528,53 +1520,33 @@ input[type=range]::-moz-range-thumb {
     document.getElementById('belgiumTotal').textContent = fmt(belgTotal);
 
     const bCard = document.getElementById('card-balance');
-    bCard.querySelector('.m-val').textContent = fmt(cashLeft);
-    bCard.className = 'metric ' + (cashLeft >= 0 ? 'pos' : 'neg');
+    bCard.querySelector('.m-val').textContent = fmt(cashBalance);
+    bCard.className = 'metric ' + (cashBalance > 0 ? 'pos' : 'neg');
 
     document.getElementById('b-rate-tag') && (document.getElementById('b-rate-tag').textContent = regLabel[region]);
     document.getElementById('f-total').textContent     = fmt(belgTotal);
-    // When carry-over: equity (sale proceeds minus old mortgage) shown as available cash
     document.getElementById('f-equity').textContent    = '− ' + fmt(Math.max(0, equity));
 
-    document.getElementById('f-carry-row').style.display = carryOver ? 'table-row' : 'none';
-    document.getElementById('f-carry-amt').textContent   = '+ ' + fmt(carriedAmount);
-
-    // Remainder row: only relevant without carry-over to show equity offset
-    const remainderRow = document.getElementById('f-remainder-row');
-    remainderRow.style.display = 'none';
-
-    const badge = document.getElementById('new-loan-badge');
-    if (carryOver && newLoan === 0) badge.innerHTML = '<span class="badge">fully covered</span>';
-    else if (carryOver) badge.innerHTML = '<span class="badge warn">+ new loan</span>';
-    else badge.innerHTML = '';
+    document.getElementById('f-carry-row').style.display = 'none';
+    document.getElementById('f-remainder-row').style.display = 'none';
+    document.getElementById('new-loan-badge').innerHTML = '';
     document.getElementById('f-loan').textContent = totalBorrow > 0 ? fmt(totalBorrow) : '€0';
 
     let monthly = 0;
-    let monthlyCarry = 0;
-    let monthlyNew = 0;
     if (totalBorrow > 0 && rate > 0) {
       const r = rate / 100 / 12, n = term * 12;
       const factor = r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
       monthly = totalBorrow * factor;
-      monthlyCarry = carriedAmount * factor;
-      monthlyNew   = newLoan * factor;
     }
     syncMortgageToMonthly(monthly);
 
     // Sync monthly breakdown tooltip
-    const mpCarryRow = document.getElementById('mp-carry-row');
-    const mpNewRow   = document.getElementById('mp-new-row');
-    if (carryOver && carriedAmount > 0) {
-      mpCarryRow.style.display = 'table-row';
-      document.getElementById('mp-carry-amt').textContent     = fmt(carriedAmount);
-      document.getElementById('mp-carry-payment').textContent = fmt(monthlyCarry) + '/mo';
-    } else {
-      mpCarryRow.style.display = 'none';
-    }
-    if (newLoan > 0) {
+    document.getElementById('mp-carry-row').style.display = 'none';
+    const mpNewRow = document.getElementById('mp-new-row');
+    if (totalBorrow > 0) {
       mpNewRow.style.display = 'table-row';
-      document.getElementById('mp-new-amt').textContent     = fmt(newLoan);
-      document.getElementById('mp-new-payment').textContent = fmt(monthlyNew) + '/mo';
+      document.getElementById('mp-new-amt').textContent     = fmt(totalBorrow);
+      document.getElementById('mp-new-payment').textContent = fmt(monthly) + '/mo';
     } else {
       mpNewRow.style.display = 'none';
     }
@@ -1590,10 +1562,7 @@ input[type=range]::-moz-range-thumb {
       mbox.className = 'monthly-strip';
       mbox.style.cursor = 'pointer';
       document.getElementById('monthly').textContent     = fmt(monthly) + ' / mo';
-      const loanDesc = carryOver
-        ? fmt(carriedAmount) + ' carry-over' + (newLoan > 0 ? ' + ' + fmt(newLoan) + ' top-up' : '')
-        : fmt(newLoan) + ' new loan';
-      document.getElementById('monthly-sub').textContent = rate.toFixed(1) + '% · ' + term + ' yrs · ' + loanDesc;
+      document.getElementById('monthly-sub').textContent = rate.toFixed(1) + '% · ' + term + ' yrs · ' + fmt(totalBorrow) + ' new mortgage';
     }
 
     calcInvest();
@@ -1741,7 +1710,7 @@ input[type=range]::-moz-range-thumb {
     document.getElementById(id).addEventListener('input', calc));
   document.getElementById('rate').addEventListener('input', calc);
   document.getElementById('term').addEventListener('input', calc);
-  document.getElementById('carryOver').addEventListener('change', calc);
+  document.getElementById('newMortgage').addEventListener('input', calc);
   document.getElementById('btcPrice').addEventListener('input', calcInvest);
   document.getElementById('tslaPrice').addEventListener('input', calcInvest);
   document.getElementById('btcGrowth').addEventListener('input', calcInvest);
